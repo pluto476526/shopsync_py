@@ -1,0 +1,155 @@
+<nav class="sidebar sidebar-offcanvas" id="sidebar">
+    <ul class="nav">
+      <li class="nav-item">
+        <a class="nav-link" href="index.html">
+          <i class="mdi mdi-grid-large menu-icon"></i>
+          <span class="menu-title">Dashboard</span>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href="{% url 'shop' shop.name %}">
+          <i class="mdi mdi-grid-large menu-icon"></i>
+          <span class="menu-title">{{ shop|title }}</span>
+        </a>
+      </li>
+      <li class="nav-item nav-category">Admin</li>
+      <li class="nav-item">
+        <a class="nav-link" data-bs-toggle="collapse" href="#ui-basic" aria-expanded="false"
+          aria-controls="ui-basic">
+          <i class="menu-icon mdi mdi-floor-plan"></i>
+          <span class="menu-title">Manage Shops</span>
+          <i class="menu-arrow"></i>
+        </a>
+        <div class="collapse" id="ui-basic">
+          <ul class="nav flex-column sub-menu">
+            <li class="nav-item"> <a class="nav-link" href="">All Shops</a></li>
+            <li class="nav-item"> <a class="nav-link" href="">Pending Applications</a></li>
+            <li class="nav-item"> <a class="nav-link" href="">Removed Shops</a></li>
+          </ul>
+        </div>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href="">
+          <i class="menu-icon mdi mdi-file-document"></i>
+          <span class="menu-title">Help Desk</span>
+        </a>
+      </li>
+      <li class="nav-item nav-category">My Shop</li>
+      <li class="nav-item">
+        <a class="nav-link" href="{% url 'categories' %}">
+          <i class="menu-icon mdi mdi-card-text-outline"></i>
+          <span class="menu-title">Categories</span>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" data-bs-toggle="collapse" href="#charts" aria-expanded="false" aria-controls="charts">
+          <i class="menu-icon mdi mdi-chart-line"></i>
+          <span class="menu-title">Sales</span>
+          <i class="menu-arrow"></i>
+        </a>
+        <div class="collapse" id="charts">
+          <ul class="nav flex-column sub-menu">
+            <li class="nav-item"> <a class="nav-link" href="">Online Sales</a></li>
+            <li class="nav-item"> <a class="nav-link" href="">In Person Sales</a></li>
+          </ul>
+        </div>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" data-bs-toggle="collapse" href="#tables" aria-expanded="false" aria-controls="tables">
+          <i class="menu-icon mdi mdi-table"></i>
+          <span class="menu-title">Manage Inventory</span>
+          <i class="menu-arrow"></i>
+        </a>
+        <div class="collapse" id="tables">
+          <ul class="nav flex-column sub-menu">
+            <li class="nav-item"> <a class="nav-link" href="{% url 'orders' %}">Orders</a></li>
+            <li class="nav-item"> <a class="nav-link" href="{% url 'inventory' %}">Inventory</a></li>
+          </ul>
+        </div>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" data-bs-toggle="collapse" href="#icons" aria-expanded="false" aria-controls="icons">
+          <i class="menu-icon mdi mdi-layers-outline"></i>
+          <span class="menu-title">Deliveries</span>
+          <i class="menu-arrow"></i>
+        </a>
+        <div class="collapse" id="icons">
+          <ul class="nav flex-column sub-menu">
+            <li class="nav-item"> <a class="nav-link" href="{% url 'deliveries' %}">Pending Requests</a></li>
+            <li class="nav-item"> <a class="nav-link" href="{% url 'confirmed_deliveries' %}">Confirmed Requests</a></li>
+            <li class="nav-item"> <a class="nav-link" href="{% url 'track_order' %}">Check Order Status</a></li>
+          </ul>
+        </div>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" data-bs-toggle="collapse" href="#transactions" aria-expanded="false"
+          aria-controls="transactions">
+          <i class="menu-icon mdi mdi-layers-outline"></i>
+          <span class="menu-title">Transactions</span>
+          <i class="menu-arrow"></i>
+        </a>
+        <div class="collapse" id="transactions">
+          <ul class="nav flex-column sub-menu">
+            <li class="nav-item"> <a class="nav-link" href="">Mpesa</a></li>
+            <li class="nav-item"> <a class="nav-link" href="">Cash</a></li>
+            <li class="nav-item"> <a class="nav-link" href="">Expenses</a></li>
+          </ul>
+        </div>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" data-bs-toggle="collapse" href="#marketing" aria-expanded="false"
+          aria-controls="marketing">
+          <i class="menu-icon mdi mdi-layers-outline"></i>
+          <span class="menu-title">Marketing</span>
+          <i class="menu-arrow"></i>
+        </a>
+        <div class="collapse" id="marketing">
+          <ul class="nav flex-column sub-menu">
+            <li class="nav-item"> <a class="nav-link" href="">Deals and Offers</a></li>
+            <li class="nav-item"> <a class="nav-link" href="">Online Campaigns</a></li>
+            <li class="nav-item"> <a class="nav-link" href="">Email List</a></li>
+          </ul>
+        </div>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" data-bs-toggle="collapse" href="#analytics" aria-expanded="false"
+          aria-controls="analytics">
+          <i class="menu-icon mdi mdi-layers-outline"></i>
+          <span class="menu-title">Reporting and Analytics</span>
+          <i class="menu-arrow"></i>
+        </a>
+        <div class="collapse" id="analytics">
+          <ul class="nav flex-column sub-menu">
+            <li class="nav-item"> <a class="nav-link" href="">Sales Reports</a></li>
+          </ul>
+        </div>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" data-bs-toggle="collapse" href="#users" aria-expanded="false" aria-controls="users">
+          <i class="menu-icon mdi mdi-layers-outline"></i>
+          <span class="menu-title">Manage Users</span>
+          <i class="menu-arrow"></i>
+        </a>
+        <div class="collapse" id="users">
+          <ul class="nav flex-column sub-menu">
+            <li class="nav-item"> <a class="nav-link" href="">Superusers</a></li>
+            <li class="nav-item"> <a class="nav-link" href="">Staff</a></li>
+            <li class="nav-item"> <a class="nav-link" href="">Blacklist</a></li>
+          </ul>
+        </div>
+      </li>
+      <li class="nav-item nav-category">Help</li>
+      <li class="nav-item">
+        <a class="nav-link" href="http://bootstrapdash.com/demo/star-admin2-free/docs/documentation.html">
+          <i class="menu-icon mdi mdi-file-document"></i>
+          <span class="menu-title">F.A.Qs</span>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href="{% url 'home' %}">
+          <i class="menu-icon mdi mdi-file-document"></i>
+          <span class="menu-title">ShopSync</span>
+        </a>
+      </li>
+    </ul>
+  </nav>

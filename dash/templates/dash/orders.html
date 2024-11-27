@@ -1,0 +1,251 @@
+{% extends 'dash/main.html' %}
+{% load static %}
+{% block main %}
+<div class="content-wrapper">
+    <div class="row">
+        {% if messages %}
+        {% for message in messages %}
+        <div class="alert alert-info alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endfor %}
+        {% endif %}
+        <div class="col-sm-12 grid-margin stretch-card">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-sm-flex justify-content-between align-items-start">
+                        <div>
+                            <h4 class="card-title">Orders</h4>
+                            <p class="card-description">
+                                View, manage, or print orders.
+                            </p>
+                        </div>
+                        <div>
+                            <button class="btn btn-primary btn-sm text-white mb-0 me-0" type="button"
+                                data-bs-toggle="modal" data-bs-target="#newOrderModal">
+                                <i class="mdi mdi-account-plus"></i>
+                                New Order
+                            </button>
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Product</th>
+                                    <th>Category</th>
+                                    <th>Quantity</th>
+                                    <th>Supplier</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% if products %}
+                                {% for product in products %}
+                                <tr>
+                                    <td>{{ product.product|capfirst }}</td>
+                                    <td>{{ product.category|capfirst }}</td>
+                                    <td>{{ product.quantity }} {{ product.units }}</td>
+                                    <td>{{ product.supplier|title }}</td>
+                                    <!-- <td class="text-success"> 98.05% <i class="ti-arrow-up"></i></td> -->
+                                    <td class="d-flex justify-content-start" style="gap: 3px;">
+                                        <button class="badge badge-success">Print</button>
+                                        <button class="badge badge-info" type="button" data-bs-toggle="modal"
+                                            data-bs-target="#viewproductModal{{ product.id }}">View</button>
+                                        <!-- View product Modal -->
+                                        <div class="modal fade" id="viewproductModal{{ product.id }}" tabindex="-1">
+                                            <div class="modal-dialog">
+                                                <div class="modal-content">
+                                                    <div class="modal-header">
+                                                        <h5 class="modal-title">Inventory Form</h5>
+                                                        <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                                            aria-label="Close"></button>
+                                                    </div>
+                                                    <div class="modal-body">
+                                                        <!-- Floating Labels Form -->
+                                                        <form class="row g-3" method="post" enctype="multipart/form-data">
+                                                            {% csrf_token %}
+                                                            <div class="col-md-12">
+                                                                <div class="form-floating">
+                                                                    <input type="text" name="supplier" 
+                                                                    class="form-control" list="sup_list"
+                                                                    autocomplete="off" value="{{ product.supplier }}">
+                                                                    <datalist id="sup_list">
+                                                                        {% for supplier in suppliers %}
+                                                                        <option value="{{ supplier|title }}">
+                                                                        {% endfor %}
+                                                                    </datalist>
+                                                                    <label>Supplier</label>
+                                                                </div>
+                                                            </div>
+                                                            <div class="col-md-12">
+                                                                <div class="form-floating">
+                                                                    <input type="text" name="product" class="form-control"  value="{{ product.product|capfirst }}">
+                                                                    <label>Product</label>
+                                                                </div>
+                                                            </div>
+                                                            <div class="col-md-12">
+                                                                <div class="form-floating">
+                                                                    <input type="text" name="category" 
+                                                                    class="form-control" list="category_list"
+                                                                    autocomplete="off" value="{{ product.category|capfirst }}">
+                                                                    <datalist id="category_list">
+                                                                        {% for category in categories %}
+                                                                        <option value="{{ category|capfirst }}">
+                                                                        {% endfor %}
+                                                                    </datalist>
+                                                                    <label for="Category">Category</label>
+                                                                </div>
+                                                            </div>
+                                                            <div class="col-md-12">
+                                                                <div class="form-floating">
+                                                                    <input type="text" name="description" class="form-control" 
+                                                                    value="{{ product.description|capfirst }}">
+                                                                    <label>Order Instructions</label>
+                                                                </div>
+                                                            </div>
+                                                            <div class="col-md-6">
+                                                                <div class="form-floating">
+                                                                    <input type="text" name="quantity" 
+                                                                    value="{{ product.quantity }}" 
+                                                                    class="form-control">
+                                                                    <label>Quantity</label>
+                                                                </div>
+                                                            </div>
+                                                            <div class="col-md-6">
+                                                                <div class="form-floating">
+                                                                    <select name="units" class="form-select">
+                                                                        <option value="" selected disabled></option>
+                                                                        <option value="units">Units</option>
+                                                                        <option value="litres">Litres</option>
+                                                                        <option value="meters">Meters</option>
+                                                                        <option value="grams">Grams</option>
+                                                                        <option value="kilos">Kilograms</option>
+                                                                        <option value="tonnes">Tonnes</option>
+                                                                    </select>
+                                                                    <label>Units</label>
+                                                                </div>
+                                                            </div>
+                                                            <input type="hidden" name="source" value="edit_order">
+                                                            <input type="hidden" name="id" value="{{ product.id }}">
+                                                            <div class="modal-footer">
+                                                                <button type="button" class="btn btn-sm btn-outline-danger" data-bs-dismiss="modal">Close</button>
+                                                                <button type="submit" class="btn btn-sm btn-outline-success">Save Changes</button>
+                                                            </div>
+                                                        </form>
+                                                        <!-- End floating Labels Form -->
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <!-- Edit Order Modal -->
+                                        <form method="post">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="id" value="{{ product.id }}">
+                                            <input type="hidden" name="source" value="receive">
+                                            <button class="badge badge-primary" type="submit">Received</button>
+                                        </form>
+                                        <button class="badge badge-danger">Delete</button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                                {% else %}
+                                <div class="alert alert-info alert-dismissible fade show" role="alert">
+                                    <i class="bi bi-info-circle me-1"></i>
+                                    No Data
+                                </div>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- content-wrapper ends -->
+
+<!-- New Order Modal -->
+<div class="modal fade" id="newOrderModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Order Form</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Floating Labels Form -->
+                <form class="row g-3" method="post">
+                    {% csrf_token %}
+                    <div class="col-md-12">
+                        <div class="form-floating">
+                            <input type="text" name="supplier" 
+                            class="form-control" list="sup_list"
+                            autocomplete="off">
+                            <datalist id="sup_list">
+                                {% for supplier in suppliers %}
+                                <option value="{{ supplier|title }}">
+                                {% endfor %}
+                            </datalist>
+                            <label>Supplier</label>
+                        </div>
+                    </div>
+                    <div class="col-md-12">
+                        <div class="form-floating">
+                            <input type="text" name="product" class="form-control">
+                            <label>Product</label>
+                        </div>
+                    </div>
+                    <div class="col-md-12">
+                        <div class="form-floating">
+                            <input type="text" name="category" 
+                            class="form-control" list="category_list"
+                            autocomplete="off">
+                            <datalist id="category_list">
+                                {% for category in categories %}
+                                <option value="{{ category|capfirst }}">
+                                {% endfor %}
+                            </datalist>
+                            <label>Category</label>
+                        </div>
+                    </div>
+                    <div class="col-md-12">
+                        <div class="form-floating">
+                            <input type="text" name="description" class="form-control">
+                            <label>Order Instructions</label>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-floating">
+                            <input type="text" name="quantity" class="form-control">
+                            <label>Quantity</label>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-floating">
+                            <select name="units" class="form-select">
+                                <option value="" selected disabled></option>
+                                <option value="units">Units</option>
+                                <option value="litres">Litres</option>
+                                <option value="meters">Meters</option>
+                                <option value="grams">Grams</option>
+                                <option value="kilos">Kilograms</option>
+                                <option value="tonnes">Tonnes</option>
+                            </select>
+                            <label>Units</label>
+                        </div>
+                    </div>
+                    <input type="hidden" name="source" value="new_order">
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-sm btn-outline-danger" data-bs-dismiss="modal">Close</button>
+                        <button type="submit" class="btn btn-sm btn-outline-success">Add Order</button>
+                    </div>
+                </form>
+                <!-- End floating Labels Form -->
+            </div>
+        </div>
+    </div>
+</div>
+<!-- New Product Modal -->
+{% endblock %}
