@@ -9,6 +9,10 @@ import string
 
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
+    avatar = models.ImageField(default='default_profile.jpg')
+    shop = models.ForeignKey('shop.Shop', on_delete=models.SET_NULL, blank=True, null=True)
+    register_timestamp = models.DateTimeField()
+    phone = models.CharField(max_length=20, blank=True, null=True)
 
     def __str__(self):
         return f"{self.user.username}'s profile"
@@ -18,6 +22,7 @@ class ShopStaff(models.Model):
     shop = models.ForeignKey('shop.Shop', on_delete=models.CASCADE)
     name = models.CharField(max_length=100)
     job = models.CharField(max_length=100)
+    avatar = models.ImageField(default='default_profile.jpg')
     timestamp = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -38,7 +43,7 @@ class Category(models.Model):
     category = models.CharField(max_length=50)
     description = models.TextField(blank=True, null=True)
     is_featured = models.BooleanField(default=False)
-    avatar = models.ImageField(default='avatar5.png')
+    avatar = models.ImageField(default='shop_profile.jpg')
     timestamp = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -47,7 +52,7 @@ class Category(models.Model):
 
 class Inventory(models.Model):
     shop = models.ForeignKey('shop.Shop', on_delete=models.CASCADE)
-    avatar = models.ImageField(default='avatar5.png')
+    avatar = models.ImageField(default='shop_profile.jpg')
     product = models.CharField(max_length=50)
     product_id = models.CharField(max_length=10, unique=True)
     category = models.ForeignKey('dash.Category', on_delete=models.SET_NULL, null=True)
@@ -73,7 +78,7 @@ class Inventory(models.Model):
 
 
 class PaymentMethod(models.Model):
-    shop = models.ForeignKey('shop.Shop', on_delete=models.CASCADE, null=True)
+    shop = models.ForeignKey('shop.Shop', on_delete=models.CASCADE)
     payment_method = models.CharField(max_length=20)
     
     def __str__(self):
@@ -85,6 +90,7 @@ class Delivery(models.Model):
     username = models.ForeignKey('auth.User', on_delete=models.SET_NULL, blank=True, null=True, related_name='customer')
     unregistered_user = models.CharField(max_length=50, blank=True, null=True)
     order_number = models.CharField(max_length=10)
+    prod_id = models.CharField(max_length=10)
     category = models.ForeignKey('dash.Category', on_delete=models.SET_NULL, null=True)
     product = models.ForeignKey('dash.Inventory', on_delete=models.SET_NULL, null=True)
     avatar = models.ImageField(default='avatar5.png')

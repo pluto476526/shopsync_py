@@ -197,6 +197,7 @@ def deliveries_view(request):
                 shop = my_shop(request),
                 username = username,
                 unregistered_user = customer,
+		prod_id = selected_product.product_id,
                 category = category_instance,
                 product = selected_product,
                 quantity = quantity,
@@ -226,7 +227,7 @@ def deliveries_view(request):
                 o.admin = request.user
 
             Delivery.objects.bulk_update(mult_orders, ['status', 'time_confirmed', 'admin'])
-            messages.success(request, f'Order #{order_no} confirmed')
+            messages.success(request, f'Order /#{order_no} confirmed')
             return redirect('deliveries')
     
     requests = Delivery.objects.filter(shop=my_shop(request), status='processing') 

@@ -16,9 +16,15 @@ def get_order(request):
     """
     Context processor to fetch and filter orders based on a query parameter.
     """
-    try:
-        shop = get_user_shop(request.user)
-        orders = Delivery.objects.filter(shop=shop)
+    if request.user.is_authenticated:
+        try:
+            shop = get_user_shop(request.user)
+            orders = Delivery.objects.filter(shop=shop)
+
+        except:
+            orders = []
+
+        
         query = request.GET.get('q', '')
 
         if query:
@@ -27,12 +33,7 @@ def get_order(request):
             if not orders.exists():
                 messages.error(request, f'Order number "{query}" not found.')
 
-        else:
-            orders = []
-
         return {'tracked_order': orders}
     
-    except Exception as e:
-        logger.error(f"An error occurred: {str(e)}")
-        messages.error(request, 'An error occurred while retrieving orders.')
+    else:
         return {}

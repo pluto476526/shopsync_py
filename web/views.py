@@ -93,7 +93,12 @@ def sign_out(request):
 
 def all_shops_view(request):
     q = request.GET.get('q')
-    all_shops = Shop.objects.exclude(owner=request.user)
+    
+    try:
+    	all_shops = Shop.objects.exclude(owner=request.user)
+    	
+    except TypeError:
+    	all_shops = Shop.objects.all()
 
     if q:
         all_shops = all_shops.filter(

@@ -21,10 +21,12 @@
                 {% if shop %}
                 <li><a class="getstarted" href="{% url 'dash' %}">{{ shop }}</a></li>
                 {% else %}
+                {% if request.user.is_authenticated %}
                 <li>
                     <a class="getstarted" data-bs-toggle="modal" data-bs-target="#newShopModal" 
                     href="">Register Shop</a>
                 </li>
+                {% endif %}
                 {% endif %}
             </ul>
             <i class="bi bi-list mobile-nav-toggle"></i>

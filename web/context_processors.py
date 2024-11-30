@@ -13,9 +13,8 @@ def get_company(request):
         try:
             shop = get_object_or_404(Shop, owner=request.user)
 
-        except Exception as e:
+        except:
             shop = []
-            logger.debug(e)
 
     else:
         shop = []
