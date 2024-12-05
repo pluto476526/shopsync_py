@@ -30,6 +30,7 @@
                         </div>
                     </div>
                     <div class="table-responsive">
+                        {% if categories %}
                         <table class="table table-hover">
                             <thead>
                                 <tr>
@@ -44,7 +45,7 @@
                                 {% for category in categories %}
                                 <tr>
                                     <td>{{ category.category|title }}</td>
-                                    <td>{{ category.description|capfirst }}</td>
+                                    <td>{{ category.description|capfirst|truncatechars:20 }}</td>
                                     <td>{{ category.timestamp }}</td>
                                     <td>{{ category.is_featured }}</td>
                                     <!-- <td class="text-success"> 98.05% <i class="ti-arrow-up"></i></td> -->
@@ -122,6 +123,7 @@
                                 {% endfor %}
                             </tbody>
                         </table>
+                        {% endif %}
                     </div>
                 </div>
             </div>
@@ -167,8 +169,5 @@
     </div>
 </div>
 <!-- New Category Modal -->
-
-
-
 
 {% endblock %}

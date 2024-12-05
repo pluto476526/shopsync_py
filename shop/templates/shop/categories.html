@@ -1,0 +1,43 @@
+{% extends 'shop/main.html' %}
+{% load static %}
+{% block main %}
+
+{% if messages %}
+{% for message in messages %}
+<div class="alert alert-info alert-dismissible fade show text-center" role="alert">
+    {{ message }}
+</div>
+{% endfor %}
+{% endif %}
+
+
+<div class="hero-wrap hero-bread" style="background-image: url('{{ the_shop.avatar.url }}');">
+    <div class="container">
+      <div class="row no-gutters slider-text align-items-center justify-content-center">
+        <div class="col-md-9 ftco-animate text-center">
+          <h1 class="mb-0 bread">Categories</h1>
+        </div>
+      </div>
+    </div>
+</div>
+
+<br><br>
+<section class="ftco-section ftco-category ftco-no-pt mt-5">
+    <div class="container">
+        <div class="row">
+            {% for cat in categories %}
+                <div class="col-md-4 mb-5">
+                    <div class="category-wrap ftco-animate img d-flex align-items-end"
+                        style="background-image: url('{{ cat.avatar.url }}');">
+                        <div class="text px-3 py-1">
+                            <h2 class="mb-0"><a href="{% url 'products2' the_shop.name cat.category %}">{{ cat.category|title }}</a></h2>
+                        </div>
+                    </div>
+                    <div class="text text-center p-3">{{ cat.description|capfirst|truncatewords:20 }}</div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+<hr>
+{% endblock %}

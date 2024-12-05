@@ -1,0 +1,202 @@
+{% extends 'dash/main.html' %}
+{% load static %}
+{% block main %}
+<div class="content-wrapper">
+    <div class="row">
+        {% if messages %}
+        {% for message in messages %}
+        <div class="alert alert-info alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endfor %}
+        {% endif %}
+        <div class="col-sm-12 grid-margin stretch-card">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-sm-flex justify-content-between align-items-start">
+                        <div>
+                            <h4 class="card-title">Pending Physical Sales</h4>
+                            <p class="card-description">
+                                View all sales from your brick and mortar shop.
+                            </p>
+                        </div>
+                        <div>
+                            <button class="btn btn-primary btn-sm text-white mb-0 me-0" type="button"
+                                data-bs-toggle="modal" data-bs-target="#newSaleModal">
+                                <i class="mdi mdi-account-plus"></i>
+                                New Sale
+                            </button>
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        {% if pending_sales %}
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Customer</th>
+                                    <th>Order #</th>
+                                    <th>Items Count</th>
+                                    <th>Total Amount</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for product in pending_sales %}
+                                <tr>
+                                    <td>{{ product.unregistered_user|title }}</td>
+                                    <td>{{ product.order_number }}</td>
+                                    <td>{{ product.item_count }}</td>
+                                    <td>KSH. {{ product.total_amount }}</td>
+                                    <!-- <td class="text-success"> 98.05% <i class="ti-arrow-up"></i></td> -->
+                                    <td class="d-flex justify-content-start" style="gap: 3px;">
+                                        <a  href="{% url 'order_details' product.order_number %}">
+                                            <span class="badge badge-info">View</span>
+                                        </a>
+                                        <form action="" method="post">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="order_number" value="{{ product.order_number }}">
+                                            <input type="hidden" name="source" value="confirm_payment">
+                                            <button class="badge badge-success" type="submit">Complete</button>
+                                        </form>
+                                        <button class="badge badge-danger">Delete</button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-12 grid-margin stretch-card">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-sm-flex justify-content-between align-items-start">
+                        <div>
+                            <h4 class="card-title">Completed Physical Sales</h4>
+                            <p class="card-description">
+                                View all completed and paid sales from your brick and mortar shop.
+                            </p>
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        {% if completed_sales %}
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Customer</th>
+                                    <th>Order #</th>
+                                    <th>Items Count</th>
+                                    <th>Total Amount</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for product in completed_sales %}
+                                <tr>
+                                    <td>{{ product.unregistered_user|title }}</td>
+                                    <td>{{ product.order_number }}</td>
+                                    <td>{{ product.item_count }}</td>
+                                    <td>KSH. {{ product.total_amount }}</td>
+                                    <!-- <td class="text-success"> 98.05% <i class="ti-arrow-up"></i></td> -->
+                                    <td class="d-flex justify-content-start" style="gap: 3px;">
+                                        <a  href="{% url 'order_details' product.order_number %}">
+                                            <span class="badge badge-info">View</span>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- content-wrapper ends -->
+
+<!-- New Request Modal -->
+<div class="modal fade" id="newSaleModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Sales Form</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Floating Labels Form -->
+                <form class="row g-3" method="post">
+                    {% csrf_token %}
+                    <div class="col-md-12">
+                        <div class="form-floating">
+                            <input type="text" name="username" class="form-control">
+                            <label>Customer Name</label>
+                        </div>
+                    </div>
+                    <div class="col-md-12">
+                        <div class="form-floating">
+                            <input type="text" name="phone" class="form-control">
+                            <label>Phone Number</label>
+                        </div>
+                    </div>
+                    <div class="col-md-12">
+                        <div class="form-floating">
+                            <select name="product_id" class="form-select">
+                                <option value="" selected disabled>------------------------</option>
+                                {% for pr in available_products %}
+                                <option value="{{ pr.product_id }}">{{ pr.product|title }}</option>
+                                {% endfor %}
+                            </select>
+                            <label>Product</label>
+                        </div>
+                    </div>
+                    <div class="col-md-12">
+                        <div class="form-floating">
+                            <input type="number" name="quantity" class="form-control">
+                            <label>Quantity</label>
+                        </div>
+                    </div>
+                    <div class="col-md-12">
+                        <div class="form-floating">
+                            <select name="payment_method" class="form-select">
+                                <option value="" selected disabled>------------------------</option>
+                                {% for method in pay_method %}
+                                <option value="{{ method.payment_method }}">{{ method.payment_method|title }}</option>
+                                {% endfor %}
+                            </select>
+                            <label>Product</label>
+                        </div>
+                    </div>
+                    <div class="col-md-12">
+                        <div class="form-floating">
+                            <input type="text" name="order_number" class="form-control">
+                            <label>Order Number</label>
+                        </div>
+                    </div>
+                    <div class="col-md-12">
+                        <small>
+                            **Use the same order number for multiple orders by one person
+                        </small>
+                    </div>
+                    <input type="hidden" name="source" value="new_sale">
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-sm btn-outline-danger"
+                            data-bs-dismiss="modal">Close</button>
+                        <button type="submit" class="btn btn-sm btn-outline-success">Add Request</button>
+                    </div>
+                </form>
+                <!-- End floating Labels Form -->
+            </div>
+        </div>
+    </div>
+</div>
+<!-- New Delivery Modal -->
+
+
+
+
+{% endblock %}

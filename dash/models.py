@@ -9,6 +9,7 @@ import string
 
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
+    identifier = models.CharField(max_length=10, unique=True, null=True)
     avatar = models.ImageField(default='default_profile.jpg')
     shop = models.ForeignKey('shop.Shop', on_delete=models.SET_NULL, blank=True, null=True)
     register_timestamp = models.DateTimeField()
@@ -16,6 +17,11 @@ class Profile(models.Model):
 
     def __str__(self):
         return f"{self.user.username}'s profile"
+
+    def save(self, *args, **kwargs):
+        if not self.user_id:
+            self.user_id = ''.join(secrets.choice(string.ascii_uppercase + string.digits) for _ in range(8))
+        super().save(*args, **kwargs)
 
 
 class ShopStaff(models.Model):
@@ -93,7 +99,7 @@ class Delivery(models.Model):
     prod_id = models.CharField(max_length=10)
     category = models.ForeignKey('dash.Category', on_delete=models.SET_NULL, null=True)
     product = models.ForeignKey('dash.Inventory', on_delete=models.SET_NULL, null=True)
-    avatar = models.ImageField(default='avatar5.png')
+    avatar = models.ImageField(default='shop_profile.jpg')
     quantity = models.PositiveIntegerField()
     price = models.DecimalField(max_digits=10, decimal_places=2)
     units = models.CharField(max_length=20)
@@ -120,14 +126,26 @@ class Delivery(models.Model):
 
 
     def save(self, *args, **kwargs):
-        if not self.order_number:  
+        if not self.order_number:
             self.order_number = ''.join(secrets.choice(string.ascii_uppercase + string.digits) for _ in range(8))
         super().save(*args, **kwargs)
 
 
+class HelpDesk(models.Model):
+    shop = models.ForeignKey('shop.Shop', on_delete=models.SET_NULL, null=True)
+    username = models.ForeignKey('auth.User', on_delete=models.SET_NULL, null=True, related_name='user')
+    issue = models.CharField(max_length=100)
+    description = models.TextField()
+    help_id = models.CharField(max_length=10, unique=True)
+    admin = models.ForeignKey('auth.User', on_delete=models.SET_NULL, blank=True, null=True, related_name='superadmin')
+    timestamp = models.DateTimeField(auto_now_add=True)
 
+    def __str__(self):
+        return f'{self.shop}: {self.issue}'
 
-
-
+    def save(self, *args, **kwargs):
+        if not self.help_id:
+            self.help_id = ''.join(secrets.choice(string.ascii_uppercase + string.digits) for _ in range(8))
+        super().save(*args, **kwargs)
 
 

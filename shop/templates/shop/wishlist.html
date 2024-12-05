@@ -15,7 +15,7 @@
     <div class="container">
         <div class="row no-gutters slider-text align-items-center justify-content-center">
             <div class="col-md-9 ftco-animate text-center">
-                <h1 class="mb-0 bread">Cart</h1>
+                <h1 class="mb-0 bread">Wishlist</h1>
             </div>
         </div>
     </div>
@@ -40,7 +40,7 @@
                         <tbody>
                             <form action="" method="post">
                                 {% csrf_token %}
-                                {% for product in cart %}
+                                {% for product in wishes %}
                                 <tr class="text-center">
                                     <td class="product-remove">
                                         <a href="#"><span class="ion-ios-close"></span></a>
@@ -55,10 +55,9 @@
                                     <td class="price">KSH. {{ product.price }} per {{ product.units }}</td>
                                     <td class="quantity">
                                         <div class="input-group">
-                                            <input type="hidden" name="product_id[]" value="{{ product.id }}">
-                                            <input type="number" name="quantity[]"
+                                            <input type="number" readonly
                                                 class="quantity form-control input-number"
-                                                value="{{ product.quantity }}" min="1" max="100">
+                                                value="{{ product.quantity }}">
                                         </div>
                                     </td>
                                     <td class="total">KSH. {{ product.total }}</td>
@@ -66,7 +65,7 @@
                                 {% endfor %}
                                 <tr class="text-center">
                                     <td colspan="6">
-                                        <input type="submit" class="btn btn-primary" value="Save Changes">
+                                        <input type="submit" class="btn btn-primary" value="Add to Cart">
                                     </td>
                                 </tr>
                             </form>
@@ -78,13 +77,13 @@
         </div>
         <div class="row d-lg-none justify-content-center">
             <div class="d-flex justify-content-center">
-                <h2>My Cart:</h2>
+                <h2>My Wishlist</h2>
             </div>
             <div class="col-md-10">
                 <div class="sidebar-box ftco-animate">
                     <form action="" method="post">
-                        {% for product in cart %}
-                        <div class="block-21 mb-4 mt-4 d-flex align-items-center">
+                        {% for product in wishes %}
+                        <div class="block-21 mb-4 d-flex align-items-center">
                             {% csrf_token %}
                             <a class="blog-img mr-4" style="background-image: url('{{ product.avatar.url }}');"></a>
                             <div class="text">
@@ -96,10 +95,9 @@
                                 </div>
                                     <div class="col-md-6">
                                         <div class="input-group">
-                                            <input type="hidden" name="product_id[]" value="{{ product.id }}">
-                                            <input type="number" name="quantity[]"
+                                            <input type="number" readonly
                                                 class="form-control quantity input-number"
-                                                value="{{ product.quantity }}" min="1" max="100">
+                                                value="{{ product.quantity }}">
                                         </div>
                                     </div>
                                 </div>
@@ -111,74 +109,14 @@
                                 </div>
                             </div>
                         </div>
-                        <hr>
                         {% endfor %}
                         <div class="block-21 mb-4 d-flex">
-                            <div class="text">
-                                <input type="submit" class="btn btn-sm btn-primary" value="Save Changes">
+                            <div class="text w-100 d-flex justify-content-end">
+                                <input type="submit" class="btn btn-sm btn-primary mr-0" value="Add to Cart">
                             </div>
                         </div>
                     </form>
                 </div>
-            </div>
-        </div>
-        <div class="row justify-content-end">
-            <div class="col-lg-4 mt-5 cart-wrap ftco-animate">
-                <div class="cart-total mb-3">
-                    <h3>Coupon Code</h3>
-                    <p>Enter your coupon code if you have one</p>
-                    <form action="#" class="info">
-                        <div class="form-group">
-                            <label for="">Coupon code</label>
-                            <input type="text" class="form-control text-left px-3" placeholder="">
-                        </div>
-                    </form>
-                </div>
-                <p><a href="checkout.html" class="btn btn-sm btn-primary">Apply Coupon</a></p>
-            </div>
-            <div class="col-lg-4 mt-5 cart-wrap ftco-animate">
-                <div class="cart-total mb-3">
-                    <h3>Estimate shipping and tax</h3>
-                    <p>Enter your destination to get a shipping estimate</p>
-                    <form action="#" class="info">
-                        <div class="form-group">
-                            <label for="">Country</label>
-                            <input type="text" class="form-control text-left px-3" placeholder="">
-                        </div>
-                        <div class="form-group">
-                            <label for="country">State/Province</label>
-                            <input type="text" class="form-control text-left px-3" placeholder="">
-                        </div>
-                        <div class="form-group">
-                            <label for="country">Zip/Postal Code</label>
-                            <input type="text" class="form-control text-left px-3" placeholder="">
-                        </div>
-                    </form>
-                </div>
-                <p><a href="checkout.html" class="btn btn-sm btn-primary">Estimate</a></p>
-            </div>
-            <div class="col-lg-4 mt-5 cart-wrap ftco-animate">
-                <div class="cart-total mb-3">
-                    <h3>Cart Totals</h3>
-                    <p class="d-flex">
-                        <span>Subtotal</span>
-                        <span>KSH. {{ pending_total.total_sum }}</span>
-                    </p>
-                    <p class="d-flex">
-                        <span>Delivery</span>
-                        <span>$0.00</span>
-                    </p>
-                    <p class="d-flex">
-                        <span>Discount</span>
-                        <span>$3.00</span>
-                    </p>
-                    <hr>
-                    <p class="d-flex total-price">
-                        <span>Total</span>
-                        <span>KSH. {{ pending_total }}</span>
-                    </p>
-                </div>
-                <p><a href="{% url 'checkout' the_shop %}" class="btn btn-sm btn-primary">Proceed to Checkout</a></p>
             </div>
         </div>
     </div>

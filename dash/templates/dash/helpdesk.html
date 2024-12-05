@@ -1,0 +1,120 @@
+{% extends 'dash/main.html' %}
+{% load static %}
+{% block main %}
+<div class="content-wrapper">
+    <div class="row">
+        {% if messages %}
+        {% for message in messages %}
+        <div class="alert alert-info alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endfor %}
+        {% endif %}
+        <div class="col-sm-12 grid-margin stretch-card">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-sm-flex justify-content-between align-items-start">
+                        <div>
+                            <h4 class="card-title">Help Desk</h4>
+                            <p class="card-description">
+                                Report any issues you have to get a ticket number. You can also ask questions ans an admin will respond.
+                            </p>
+                        </div>
+                        <div>
+                            <button class="btn btn-primary btn-sm text-white mb-0 me-0" type="button"
+                                data-bs-toggle="modal" data-bs-target="#helpModal">
+                                <i class="mdi mdi-account-plus"></i>
+                                Get Ticket
+                            </button>
+                        </div>
+                    </div>
+                    <div class="col-sm-12 d-flex">
+                    <div class="col-sm-4 grid-margin stretch-card">
+                        <div class="card bg-primary card-rounded">
+                          <div class="card-body pb-0">
+                            <h4 class="card-title card-title-dash text-white mb-4">Status Summary</h4>
+                            <div class="row">
+                              <div class="col-sm-8">
+                                <p class="status-summary-ight-white mb-1">Closed Value</p>
+                                <h2 class="text-info">357</h2>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div class="col-sm-4 grid-margin stretch-card">
+                        <div class="card bg-primary card-rounded">
+                          <div class="card-body pb-0">
+                            <h4 class="card-title card-title-dash text-white mb-4">Status Summary</h4>
+                            <div class="row">
+                              <div class="col-sm-8">
+                                <p class="status-summary-ight-white mb-1">Closed Value</p>
+                                <h2 class="text-info">357</h2>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="col-sm-4 grid-margin stretch-card">
+                        <div class="card bg-primary card-rounded">
+                          <div class="card-body pb-0">
+                            <h4 class="card-title card-title-dash text-white mb-4">Status Summary</h4>
+                            <div class="row">
+                              <div class="col-sm-8">
+                                <p class="status-summary-ight-white mb-1">Closed Value</p>
+                                <h2 class="text-info">357</h2>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- content-wrapper ends -->
+
+
+  <!-- Help Modal -->
+  <div class="modal fade" id="helpModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Register Shop Form</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Floating Labels Form -->
+                <form class="row g-3" method="post">
+                    {% csrf_token %}
+                    <div class="col-md-12">
+                        <div class="form-floating">
+                            <input type="text" name="issue" class="form-control">
+                            <label>Issue</label>
+                        </div>
+                    </div>
+                    <div class="col-md-12">
+                        <div>
+                            <textarea class="w-100 border" name="description" rows="7" placeholder="  Short Description"></textarea>
+                        </div>
+                    </div>
+                    <input type="hidden" name="source" value="new_issue">
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-sm btn-outline-danger"
+                            data-bs-dismiss="modal">Close</button>
+                        <button type="submit" class="btn btn-sm btn-outline-success">Submit</button>
+                    </div>
+                </form>
+                <!-- End floating Labels Form -->
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Help Modal -->
+
+
+{% endblock %}

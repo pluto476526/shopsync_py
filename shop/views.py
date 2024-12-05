@@ -30,20 +30,88 @@ def get_shop(name):
     return get_object_or_404(Shop, name=name)
 
 
-# Create your views here.
+def add_to_cart(request, name, product_no):
+    if request.method == 'GET':
+        the_shop = get_shop(name)
+        product = get_object_or_404(Inventory, product_id=product_no)
+        category = get_object_or_404(Category, shop=the_shop, category=product.category.category)
+        Cart.objects.create(
+            shop = the_shop,
+            customer = request.user,
+            category = category,
+            product = product,
+            cart_product_id = product.product_id,
+            avatar = product.avatar,
+            description = product.description,
+            price = product.price,
+            units = product.units,
+            quantity = 1,
+            total = product.price,
+        )
+        messages.success(request, f'{product.product} added to cart')
+        return redirect('shop', the_shop)
+    return {}
+
+
+def add_to_wishlist(request, name, product_no):
+    the_shop = get_shop(name)
+    wishes = Cart.objects.filter(shop=the_shop, customer=request.user, status='in_wishes')
+
+    if request.method == 'GET':
+        for wish in wishes:
+            if product_no == wish.cart_product_id:
+                messages.info(request, 'Item already in wishlist')
+                return redirect('shop', the_shop.name)
+    
+        product = get_object_or_404(Inventory, product_id=product_no)
+        category = get_object_or_404(Category, shop=the_shop, category=product.category.category)
+        Cart.objects.create(
+            shop = the_shop,
+            customer = request.user,
+            category = category,
+            product = product,
+            cart_product_id = product.product_id,
+            avatar = product.avatar,
+            description = product.description,
+            price = product.price,
+            units = product.units,
+            quantity = 1,
+            total = product.price,
+            status = 'in_wishes',
+        )
+        messages.success(request, f'{product.product} added to wishlist')
+        return redirect('shop', the_shop.name)
+    return {}
+
 
 def index(request, name):
     the_shop = get_shop(name)
-    context = {'the_shop': the_shop}
+    categories = Category.objects.filter(shop=the_shop)
+    other_categories = categories.filter(is_featured=False)[:3]
+    featured_categories = categories.filter(is_featured=True)[:3]
+    featured_products = Inventory.objects.filter(shop=the_shop, is_featured=True)
+    cart_products = Cart.objects.filter(shop=the_shop, customer=request.user, status='pending').values_list('cart_product_id', flat=True)
+    featured_products = featured_products.exclude(product_id__in=cart_products)[:8]
+    context = {
+        'the_shop': the_shop,
+        'categories': other_categories,
+        'featured_categories': featured_categories,
+        'featured_products': featured_products,
+    }
     return render(request, 'shop/index.html', context)
 
 
 def products_view(request, name):
     the_shop = get_shop(name)
     products = Inventory.objects.filter(shop=the_shop, status='available')
-    cart_products = Cart.objects.filter(shop=the_shop, customer = request.user, status='pending').values_list('cart_product_id', flat=True)
+    cart_products = Cart.objects.filter(shop=the_shop, customer=request.user, status='pending').values_list('cart_product_id', flat=True)
     products = products.exclude(product_id__in=cart_products)
-    context = {'the_shop': the_shop, 'products': products}
+    categories = Category.objects.filter(shop=the_shop)
+    context = {
+        'the_shop': the_shop,
+        'products': products,
+        'categories': categories,
+    }
     return render(request, 'shop/products.html', context)
 
 
@@ -71,12 +139,13 @@ def product_details_view(request, name, pk):
         return redirect('products', name=the_shop)
 
     category = get_object_or_404(Category, category=product.category.category)
+    in_cart = Cart.objects.filter(shop=the_shop, customer=request.user, status='pending').values_list('cart_product_id', flat=True)
 
     try:
         other_products = Inventory.objects.filter(shop=the_shop, category=category).exclude(id=product.id)
+        other_products = other_products.exclude(product_id__in=in_cart)
 
     except Exception as e:
-        logger.debug(e)
         other_products = []
 
     context = {'product': product, 'the_shop': the_shop, 'other_products': other_products}
@@ -96,6 +165,7 @@ def cart_view(request, name):
             try:
                 quantity = max(1, min(int(quantity), 100))
                 updates.append((product_id, quantity))
+
             except ValueError:
                 messages.error(request, "Invalid quantity provided.")
 
@@ -109,7 +179,6 @@ def cart_view(request, name):
                 cart_item = Cart.objects.get(id=product_id)
                 cart_item.quantity = quantity
                 cart_item.total = float(cart_item.price) * float(quantity)
-                logger.debug(cart_item.total)
                 cart_item.save()
 
         messages.success(request, "Cart updated successfully!")
@@ -206,10 +275,53 @@ def order_details_view(request, name, order_id):
     return render(request, 'shop/order_details.html', context)
 
 
+def categories_view(request, name):
+    the_shop = get_shop(name)
+    categories = Category.objects.filter(shop=the_shop)
+    context = {
+        'the_shop': the_shop,
+        'categories': categories,
+    }
+    return render(request, 'shop/categories.html', context)
 
 
+def products_view2(request, name, category):
+    the_shop = get_shop(name)
+    category_instance = get_object_or_404(Category, shop=the_shop, category=category)
+    products = Inventory.objects.filter(shop=the_shop, category=category_instance, status='available')
+    context = {
+        'products': products,
+        'the_shop': the_shop,
+    }
+    return render(request, 'shop/products.html', context)
 
 
+def wishlist_view(request, name):
+    the_shop = get_shop(name)
+    wishes = Cart.objects.filter(shop=the_shop, customer=request.user, status='in_wishes')
+
+    if request.method == 'POST':
+        products_to_update = []
+
+        for product in wishes:
+            product.status = 'pending'
+            products_to_update.append(product)
+
+        Cart.objects.bulk_update(products_to_update, ['status'])
+        messages.success(request, 'Wishlist added to cart')
+        return redirect('wishlist', the_shop.name)
+
+    context = {
+        'the_shop': the_shop,
+        'wishes': wishes,
+    }
+    return render(request, 'shop/wishlist.html', context)
+
+
+def helpdesk_view(request, name):
+    the_shop = get_shop(name)
+    context = {'the_shop': the_shop}
+    return render(request, 'shop/helpdesk.html', context)
 
 
 

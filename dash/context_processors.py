@@ -9,31 +9,26 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-def get_user_shop(user):
-    return get_object_or_404(Shop, owner=user)
+def get_user_shop(request):
+    return get_object_or_404(Shop, owner=request.user)
 
 def get_order(request):
     """
     Context processor to fetch and filter orders based on a query parameter.
     """
     if request.user.is_authenticated:
-        try:
-            shop = get_user_shop(request.user)
-            orders = Delivery.objects.filter(shop=shop)
-
-        except:
-            orders = []
-
-        
-        query = request.GET.get('q', '')
+        query = request.GET.get('q')
+        orders = []
 
         if query:
+            orders = Delivery.objects.filter(shop=get_user_shop(request))
             orders = orders.filter(Q(order_number__icontains=query))
 
             if not orders.exists():
+                orders = []
                 messages.error(request, f'Order number "{query}" not found.')
 
-        return {'tracked_order': orders}
-    
-    else:
-        return {}
+        context = {'tracked_order': orders}
+        return context
+
+    return {}

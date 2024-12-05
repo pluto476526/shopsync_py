@@ -30,6 +30,7 @@
                         </div>
                     </div>
                     <div class="table-responsive">
+                        {% if products %}
                         <table class="table table-hover">
                             <thead>
                                 <tr>
@@ -43,7 +44,6 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                {% if products %}
                                 {% for product in products %}
                                 <tr>
                                     <td>{{ product.product|capfirst }}</td>
@@ -149,18 +149,15 @@
                                             </div>
                                         </div>
                                         <!-- Edit Product Modal -->
-                                        <button class="badge badge-danger">Delete</button>
+                                        <a href="{% url 'delete' product.id %}" method="post">
+                                            <button class="badge badge-danger" type="button">Delete</button>
+                                        </a>
                                     </td>
                                 </tr>
                                 {% endfor %}
-                                {% else %}
-                                <div class="alert alert-info alert-dismissible fade show" role="alert">
-                                    <i class="bi bi-info-circle me-1"></i>
-                                    No Data
-                                </div>
-                                {% endif %}
                             </tbody>
                         </table>
+                        {% endif %}
                     </div>
                 </div>
             </div>
@@ -194,7 +191,7 @@
                             autocomplete="off">
                             <datalist id="category_list">
                                 {% for category in categories %}
-                                <option value="{{ category.category.category|capfirst }}">
+                                <option value="{{ category.category|capfirst }}">
                                 {% endfor %}
                             </datalist>
                             <label>Category</label>

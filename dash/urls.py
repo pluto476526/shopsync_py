@@ -12,6 +12,10 @@ urlpatterns = [
     path('confirmed_deliveries/', views.confirmed_deliveries_view, name='confirmed_deliveries'),
     path('track_order/', views.track_order_view, name='track_order'),
     path('order/<str:order_id>/', views.order_details_view, name='order_details'),
+    path('delete/<int:pk>/', views.delete_view, name='delete'),
+    path('sales/online/', views.online_sales_view, name='online_sales'),
+    path('sales/physical/', views.physical_sales_view, name='physical_sales'),
+    path('helpdesk/', views.user_helpdesk_view, name='helpdesk'),
 ]
 
 

@@ -14,7 +14,7 @@ class ShopCategory(models.Model):
 
 class Shop(models.Model):
     owner = models.ForeignKey('auth.User', on_delete=models.CASCADE)
-    name = models.CharField(max_length=50)
+    name = models.CharField(max_length=50, unique=True)
     bio = models.TextField(blank=True, null=True)
     avatar = models.ImageField(default='shop_profile.jpg')
     image1 = models.ImageField(default='shop_profile1.jpg')

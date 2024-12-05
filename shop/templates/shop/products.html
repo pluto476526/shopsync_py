@@ -26,11 +26,10 @@
         <div class="row justify-content-center">
             <div class="col-md-10 mb-5 text-center">
                 <ul class="product-category">
-                    <li><a href="#" class="active">All</a></li>
-                    <li><a href="#">Vegetables</a></li>
-                    <li><a href="#">Fruits</a></li>
-                    <li><a href="#">Juice</a></li>
-                    <li><a href="#">Dried</a></li>
+                    <li><a href="{% url 'products' the_shop.name %}" class="active">All</a></li>
+                    {% for category in categories %}
+                    <li><a href="{% url 'products2' the_shop.name category.category %}">{{ category.category|title }}</a></li>
+                    {% endfor %}
                 </ul>
             </div>
         </div>
@@ -59,13 +58,16 @@
                         </div>
                         <div class="bottom-area d-flex px-3">
                             <div class="m-auto d-flex">
-                                <a href="{% url 'product_details' the_shop.name product.product_id %}" class="add-to-cart d-flex justify-content-center align-items-center text-center">
+                                <a href="{% url 'product_details' the_shop.name product.product_id %}"
+                                    class="add-to-cart d-flex justify-content-center align-items-center text-center">
                                     <span><i class="ion-ios-menu"></i></span>
                                 </a>
-                                <a href="#" class="buy-now d-flex justify-content-center align-items-center mx-1">
+                                <a href="{% url 'add_to_cart' the_shop.name product.product_id %}"
+                                    class="buy-now d-flex justify-content-center align-items-center mx-1">
                                     <span><i class="ion-ios-cart"></i></span>
                                 </a>
-                                <a href="#" class="heart d-flex justify-content-center align-items-center ">
+                                <a href="{% url 'wishes' the_shop.name product.product_id %}"
+                                    class="heart d-flex justify-content-center align-items-center ">
                                     <span><i class="ion-ios-heart"></i></span>
                                 </a>
                             </div>

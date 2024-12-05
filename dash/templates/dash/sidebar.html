@@ -42,15 +42,15 @@
         </a>
       </li>
       <li class="nav-item">
-        <a class="nav-link" data-bs-toggle="collapse" href="#charts" aria-expanded="false" aria-controls="charts">
+        <a class="nav-link" data-bs-toggle="collapse" href="#sales" aria-expanded="false" aria-controls="charts">
           <i class="menu-icon mdi mdi-chart-line"></i>
           <span class="menu-title">Sales</span>
           <i class="menu-arrow"></i>
         </a>
-        <div class="collapse" id="charts">
+        <div class="collapse" id="sales">
           <ul class="nav flex-column sub-menu">
-            <li class="nav-item"> <a class="nav-link" href="">Online Sales</a></li>
-            <li class="nav-item"> <a class="nav-link" href="">In Person Sales</a></li>
+            <li class="nav-item"> <a class="nav-link" href="{% url 'online_sales' %}">Online Sales</a></li>
+            <li class="nav-item"> <a class="nav-link" href="{% url 'physical_sales' %}">In Person Sales</a></li>
           </ul>
         </div>
       </li>
@@ -140,6 +140,12 @@
       </li>
       <li class="nav-item nav-category">Help</li>
       <li class="nav-item">
+        <a class="nav-link" href="{% url 'helpdesk' %}">
+          <i class="menu-icon mdi mdi-file-document"></i>
+          <span class="menu-title">Raise Ticket</span>
+        </a>
+      </li>
+      <li class="nav-item">
         <a class="nav-link" href="http://bootstrapdash.com/demo/star-admin2-free/docs/documentation.html">
           <i class="menu-icon mdi mdi-file-document"></i>
           <span class="menu-title">F.A.Qs</span>
@@ -153,3 +159,4 @@
       </li>
     </ul>
   </nav>
+

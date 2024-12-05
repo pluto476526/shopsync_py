@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.models import User
 from django.db import models
-from dash.models import Category, Inventory, Supplier, Delivery, ShopStaff
+from dash.models import Category, Inventory, Supplier, Delivery, ShopStaff, PaymentMethod
 from shop.models import Shop
 from datetime import datetime
 import logging
@@ -107,7 +107,7 @@ def inventory_view(request):
             messages.success(request, f'{product_name} added to inventory')
             return redirect('inventory')
 
-    products = Inventory.objects.filter(shop=my_shop(request))
+    products = Inventory.objects.filter(shop=my_shop(request), status='available')
     categories = Category.objects.filter(shop=my_shop(request))
     context = {'products': products, 'categories': categories}
     return render(request, 'dash/inventory.html', context)
@@ -197,7 +197,8 @@ def deliveries_view(request):
                 shop = my_shop(request),
                 username = username,
                 unregistered_user = customer,
-		prod_id = selected_product.product_id,
+                order_number = order_no,
+		        prod_id = selected_product.product_id,
                 category = category_instance,
                 product = selected_product,
                 quantity = quantity,
@@ -239,7 +240,11 @@ def deliveries_view(request):
         item_count=models.Count('id')
     )
     available_products = Inventory.objects.filter(shop=my_shop(request), status='available')
-    context = {'available_products': available_products, 'dash_requests': dash_requests, 'cart_requests': cart_requests}
+    context = {
+        'available_products': available_products,
+        'dash_requests': dash_requests,
+        'cart_requests': cart_requests,
+    }
     return render(request, 'dash/deliveries.html', context)
 
 
@@ -255,51 +260,54 @@ def confirmed_deliveries_view(request):
         if driver_name:
             driver, created = ShopStaff.objects.get_or_create(shop=my_shop(request), name=driver_name, job='driver')
 
-        if source == 'assign_driver':
-            order = get_object_or_404(Delivery, id=order_id)
+        if source == 'assign_multiple':
+            mult_orders = Delivery.objects.filter(order_number=order_no)
 
             if address:
                 order.address = address
-
-            order.driver = driver
-            order.admin = request.user
-            order.time_in_transit = datetime.now()
-            order.status = 'in_transit'
-            order.save()
-            messages.success(request, f'Delivery {order.order_number} assigned to {order.driver.name}')
-            return redirect('confirmed_deliveries')
-
-        elif source == 'assign_multiple':
-            mult_orders = Delivery.objects.filter(order_number=order_no)
             
-            for o in mult_orders:
-                o.status = 'in_transit'
-                o.time_in_transit = datetime.now()
-                o.driver = driver
-                o.admin = request.user
+            for order in mult_orders:
+                order.status = 'in_transit'
+                order.time_in_transit = datetime.now()
+                order.driver = driver
+                order.admin = request.user
 
             Delivery.objects.bulk_update(mult_orders, ['status', 'time_in_transit','driver', 'admin'])
             messages.success(request, f'Delivery #{order_no} assigned to {driver}')
             return redirect('confirmed_deliveries')
  
-        elif source == 'complete':
-            order = get_object_or_404(Delivery, id=order_id)
-            order.status = 'completed'
-            order.time_completed = datetime.now()
-            order.save()
-            messages.success(request, f'Order {order.order_number} completed')
+        elif source == 'complete_multiple':
+            mult_orders = Delivery.objects.filter(order_number=order_no)
+
+            for order in mult_orders:
+                order.status = 'completed'
+                order.time_completed = datetime.now()
+                order.admin = request.user
+
+            Delivery.objects.bulk_update(mult_orders, ['status', 'time_completed', 'admin'])
+            messages.success(request, f'Order #{order.order_number} completed')
             return redirect('confirmed_deliveries')
 
     my_drivers = ShopStaff.objects.filter(shop=my_shop(request), job='driver')
-    all_deliveries = Delivery.objects.filter(shop=my_shop(request), status='confirmed')
-    dash_deliveries = all_deliveries.filter(source='dash')
-    cart_deliveries = all_deliveries.filter(source='cart').values('order_number', 'status').annotate(
-        total_amount=models.Sum('total'),
-        item_count=models.Count('id')
+    all_deliveries = Delivery.objects.filter(shop=my_shop(request))
+    confirmed_deliveries = all_deliveries.filter(status='confirmed').values('order_number').annotate(
+        total_amount = models.Sum('total'),
+        item_count = models.Count('id')
     )
-    in_transit = Delivery.objects.filter(shop=my_shop(request), status='in_transit')
-    completed = Delivery.objects.filter(shop=my_shop(request), status='completed')
-    context = {'dash_deliveries': dash_deliveries, 'cart_deliveries': cart_deliveries, 'my_drivers': my_drivers, 'in_transit': in_transit, 'completed': completed}
+    deliveries_in_transit = all_deliveries.filter(status='in_transit').values('order_number').annotate(
+        total_amount = models.Sum('total'),
+        item_count = models.Count('id')
+    )
+    completed_deliveries = all_deliveries.filter(status='completed').values('order_number').annotate(
+        total_amount = models.Sum('total'),
+        item_count = models.Count('id')
+    )
+    context = {
+        'confirmed_deliveries': confirmed_deliveries,
+        'deliveries_in_transit': deliveries_in_transit,
+        'completed_deliveries': completed_deliveries,
+        'my_drivers': my_drivers,
+    }
     return render(request, 'dash/confirmed_deliveries.html', context)
 
 
@@ -314,5 +322,98 @@ def order_details_view(request, order_id):
     return render(request, 'dash/order_details.html', context)
 
 
+def online_sales_view(request):
+    sales = Delivery.objects.filter(shop=my_shop(request), source='cart', status='completed')  
+    online_sales = sales.values('order_number').annotate(
+        total_amount = models.Sum('total'),
+        item_count = models.Count('id')
+    )
+    context = {'sales': online_sales}
+    return render(request, 'dash/online_sales.html', context)
 
 
+def physical_sales_view(request):
+    if request.method == 'POST':
+        customer = request.POST.get('customer')
+        phone = request.POST.get('phone')
+        product_no = request.POST.get('product_id')
+        quantity = request.POST.get('quantity')
+        order_no = request.POST.get('order_number')
+        payment_method = request.POST.get('payment_method')
+        source = request.POST.get('source')
+
+        if source == 'new_sale':
+            sel_product = get_object_or_404(Inventory, product_id=product_no)
+            payments = get_object_or_404(PaymentMethod, shop=my_shop(request), payment_method=payment_method)
+            category = get_object_or_404(Category, shop=my_shop(request), category=sel_product.category.category)
+            Delivery.objects.create(
+                shop = my_shop(request),
+                unregistered_user = customer,
+                order_number = order_no,
+                product = sel_product,
+                prod_id = sel_product.product_id,
+                category = category,
+                quantity = quantity,
+                price = sel_product.price,
+                units = sel_product.units,
+                total = float(quantity) * float(sel_product.price),
+                phone = phone,
+                payment_method = payments,
+                source = 'in_shop',
+            )
+            messages.success(request, f'Order {order_no} processing. Please confirm payment')
+            return redirect('physical_sales')
+
+        elif source == 'confirm_payment':
+            mult_orders = Delivery.objects.filter(shop=my_shop(request), order_number=order_no)
+            for order in mult_orders:
+                order.status = 'completed'
+                order.admin = request.user
+                order.time_completed = datetime.now()
+
+            Delivery.objects.bulk_update(mult_orders, ['status', 'time_completed', 'admin',])
+            messages.success(request, f'Order #{order_no} completed')
+            return redirect('physical_sales')
+
+    available_products = Inventory.objects.filter(shop=my_shop(request), status='available')
+    pay_method = PaymentMethod.objects.filter(shop=my_shop(request))
+    pending_sales = Delivery.objects.filter(
+        shop = my_shop(request),
+        source = 'in_shop',
+        status = 'processing',
+    ).values('order_number').annotate(
+        total_amount = models.Sum('total'),
+        item_count = models.Count('id'),
+    )
+    completed_sales = Delivery.objects.filter(
+        shop = my_shop(request),
+        source = 'in_shop',
+        status = 'completed',
+    ).values('order_number').annotate(
+        total_amount = models.Sum('total'),
+        item_count = models.Count('id'),
+    )
+    context = {
+        'available_products': available_products,
+        'pay_method': pay_method,
+        'pending_sales': pending_sales,
+        'completed_sales': completed_sales,
+    }
+    return render(request, 'dash/physical_sales.html', context)
+
+
+def delete_view(request, pk):
+    obj = get_object_or_404(Inventory, shop=my_shop(request), id=pk)
+
+    if request.method == 'POST':
+        # Delete product
+        obj.delete()
+        messages.success(request, f'{obj} deleted')
+        return redirect('inventory')
+
+    context = {'obj': obj}
+    return render(request, 'dash/delete.html', context)
+
+def user_helpdesk_view(request):
+    context = {}
+    return render(request, 'dash/helpdesk.html', context)
