@@ -55,13 +55,13 @@
                     <div class="row align-items-end">
                         <div class="col-md-6">
                             <div class="form-group">
-                                <label for="firstname">Phone</label>
-                                <input type="text" class="form-control" name="phone" value="" required>
+                                <label>Phone</label>
+                                <input type="text" class="form-control" value="{{ request.user.phone }}" name="phone" required>
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="form-group">
-                                <label for="lastname">Email</label>
+                                <label>Email</label>
                                 <input type="text" class="form-control" value="{{ request.user.email }}" name="email">
                             </div>
                         </div>
@@ -69,7 +69,7 @@
                         <div class="col-md-12">
                             <div class="form-group">
                                 <label>Issue</label>
-                                <input type="text" class="form-control" name="issue" value="" required>
+                                <input type="text" class="form-control" name="issue" required>
                             </div>
                         </div>
                         <div class="w-100"></div>
@@ -79,12 +79,12 @@
                                 <textarea name="description" class="form-control" rows="10" required></textarea>
                             </div>
                         </div>
+                        <input type="hidden" name="source" value="send_issue">
                         <div class="w-100"></div>
                         <div class="col-md-12">
                             <div class="cart-detail p-3 p-md-4">
-                               
                                 <p>
-                                    <input class="btn btn-primary py-3 px-4" type="submit" value="Get Ticket">
+                                    <button class="btn btn-primary py-3 px-4" type="submit">Get Ticket</button>
                                 </p>
                             </div>
                         </div>
@@ -95,4 +95,70 @@
     </div>
 </section>
 
+{% if issues %}
+<section class="ftco-section ftco-cart">
+    <div class="container">
+        <div class="row d-none d-lg-block">
+            <div class="col-md-12 ftco-animate">
+                <div class="cart-list">
+                    <table class="table">
+                        <thead class="thead-primary">
+                            <tr class="text-center">
+                                <th>Issue</th>
+                                <th>Help ID</th>
+                                <th>Status</th>
+                                <th>Created On</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for issue in issues %}
+                                <tr class="text-center">
+                                    <td class="product-name">{{ issue.issue|capfirst }}</td>
+                                    <td class="product-name">{{ issue.help_id }}</td>
+                                    <td class="product-name">{{ issue.status|capfirst }}</td>
+                                    <td class="product-name">{{ issue.timestamp }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="row d-lg-none justify-content-center">
+            <div class="col-md-10">
+                <div class="sidebar-box ftco-animate">
+                        {% for issue in issues %}
+                        <div class="block-21 mb-4 mt-4 d-flex align-items-center">
+                            <div class="text">
+                                <div>
+                                    <div class="col-md-6">
+                                        <h3 class="heading-1">
+                                            <a href="#">{{ issue.issue|title }}</a>
+                                        </h3>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <p>{{ issue.help_id }}</p>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <p>{{ issue.description|capfirst }}</p>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <p>{{ issue.status|capfirst }}</p>
+                                    </div>
+                                    <div class="meta ml-3">
+                                        <div>
+                                            <span class="icon-calendar"></span> {{ issue.timestamp }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <hr>
+                        {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endif %}
 {% endblock %}

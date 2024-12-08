@@ -5,8 +5,6 @@ import secrets
 import string
 
 
-# Create your models here
-
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
     identifier = models.CharField(max_length=10, unique=True, null=True)
@@ -124,7 +122,6 @@ class Delivery(models.Model):
     def __str__(self):
         return f'{self.shop}: {self.order_number}'
 
-
     def save(self, *args, **kwargs):
         if not self.order_number:
             self.order_number = ''.join(secrets.choice(string.ascii_uppercase + string.digits) for _ in range(8))
@@ -134,9 +131,12 @@ class Delivery(models.Model):
 class HelpDesk(models.Model):
     shop = models.ForeignKey('shop.Shop', on_delete=models.SET_NULL, null=True)
     username = models.ForeignKey('auth.User', on_delete=models.SET_NULL, null=True, related_name='user')
+    phone = models.CharField(max_length=15, blank=True, null=True)
+    email = models.EmailField(blank=True, null=True)
     issue = models.CharField(max_length=100)
     description = models.TextField()
-    help_id = models.CharField(max_length=10, unique=True)
+    help_id = models.CharField(max_length=10, unique=True, blank=True, null=True)
+    status = models.CharField(max_length=10, default='pending')
     admin = models.ForeignKey('auth.User', on_delete=models.SET_NULL, blank=True, null=True, related_name='superadmin')
     timestamp = models.DateTimeField(auto_now_add=True)
 

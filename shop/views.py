@@ -3,7 +3,7 @@ from django.db import models, connection
 from django.contrib import messages
 from django.contrib.auth.models import User
 from shop.models import Shop, Cart
-from dash.models import Inventory, Category, PaymentMethod, Delivery
+from dash.models import Inventory, Category, PaymentMethod, Delivery, HelpDesk
 from datetime import datetime
 import logging
 import secrets
@@ -320,7 +320,31 @@ def wishlist_view(request, name):
 
 def helpdesk_view(request, name):
     the_shop = get_shop(name)
-    context = {'the_shop': the_shop}
+    
+    if request.method == 'POST':
+        phone = request.POST.get('phone')
+        email = request.POST.get('email')
+        issue = request.POST.get('issue')
+        description = request.POST.get('description')
+        source = request.POST.get('source')
+
+        if source == 'send_issue':
+            HelpDesk.objects.create(
+                shop = the_shop,
+                username = request.user,
+                phone = phone,
+                email = email,
+                issue = issue,
+                description = description,
+            )
+            messages.success(request, 'Message sent. You have received a help ID.')
+            return redirect('shop_helpdesk', the_shop.name)
+
+    issues = HelpDesk.objects.filter(username=request.user)
+    context = {
+        'the_shop': the_shop,
+        'issues': issues,
+    }
     return render(request, 'shop/helpdesk.html', context)
 
 

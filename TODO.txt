@@ -2,9 +2,5 @@ check why a new category is being created each time i add a product
 timer
 check how i can fetch 3 random items from the database
 learn how to redirect back using request.meta
-change all description inputs to text area
-im working on the help desk. just completed the model
-create something like a help desk for shop owners and shoppers
-git autocommit command
-download birch utils
-daeng coding
+change all description inputs to textareas
+create help_requests view and html file in the dash

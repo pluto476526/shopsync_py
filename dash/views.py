@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.models import User
 from django.db import models
-from dash.models import Category, Inventory, Supplier, Delivery, ShopStaff, PaymentMethod
+from dash.models import Category, Inventory, Supplier, Delivery, ShopStaff, PaymentMethod, HelpDesk
 from shop.models import Shop
 from datetime import datetime
 import logging
@@ -13,10 +13,8 @@ logger = logging.getLogger(__name__)
 
 # Get users shop
 def my_shop(request):
-    shop = get_object_or_404(Shop, owner=request.user)
-    return shop
+    return get_object_or_404(Shop, owner=request.user)
 
-# Create your views here.
 
 def index(request):
     context = {}
@@ -248,7 +246,6 @@ def deliveries_view(request):
     return render(request, 'dash/deliveries.html', context)
 
 
-
 def confirmed_deliveries_view(request):
     if request.method == 'POST':
         address = request.POST.get('address')
@@ -414,6 +411,52 @@ def delete_view(request, pk):
     context = {'obj': obj}
     return render(request, 'dash/delete.html', context)
 
+
 def user_helpdesk_view(request):
-    context = {}
+    issues = HelpDesk.objects.filter(username=request.user)
+    context = {'issues': issues}
     return render(request, 'dash/helpdesk.html', context)
+
+
+def shop_profile_view(request):
+    shop = my_shop(request)
+
+    if request.method == 'POST':
+        name = request.POST.get('name')
+        bio = request.POST.get('bio')
+        avatar = request.FILES.get('avatar')
+        image1 = request.FILES.get('image1')
+        image2 = request.FILES.get('image2')
+        location = request.POST.get('location')
+        address = request.POST.get('address')
+        email = request.POST.get('email')
+        phone = request.POST.get('phone')
+        insta = request.POST.get('instagram')
+        twitter = request.POST.get('twitter')
+        source = request.POST.get('source')
+
+        if source == 'update_profile':
+            shop.name = name
+            shop.bio = bio
+            shop.location = location
+            shop.address = address
+            shop.email = email
+            shop.phone = phone
+            shop.instagram = insta
+            shop.twitter = twitter
+
+            if avatar:
+                shop.avatar = avatar
+
+            if image1:
+                shop.image1 = image1
+
+            if image2:
+                shop.image2 = image2
+
+            shop.save()
+            messages.success(request, 'Shop profile updated')
+            return redirect('shop_profile')
+
+    context = {'my_shop': shop}
+    return render(request, 'dash/shop_profile.html', context)

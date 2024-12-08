@@ -16,6 +16,7 @@ urlpatterns = [
     path('sales/online/', views.online_sales_view, name='online_sales'),
     path('sales/physical/', views.physical_sales_view, name='physical_sales'),
     path('helpdesk/', views.user_helpdesk_view, name='helpdesk'),
+    path('profile/', views.shop_profile_view, name='shop_profile'),
 ]
 
 

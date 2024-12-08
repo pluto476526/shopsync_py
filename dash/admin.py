@@ -1,5 +1,5 @@
 from django.contrib import admin
-from dash.models import Profile, Category, Inventory, Supplier, Delivery, ShopStaff, PaymentMethod
+from dash.models import Profile, Category, Inventory, Supplier, Delivery, ShopStaff, PaymentMethod, HelpDesk
 
 # Register your models here.
 
@@ -10,4 +10,4 @@ admin.site.register(Supplier)
 admin.site.register(Delivery)
 admin.site.register(ShopStaff)
 admin.site.register(PaymentMethod)
-
+admin.site.register(HelpDesk)
