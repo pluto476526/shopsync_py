@@ -10,7 +10,7 @@ class Profile(models.Model):
     identifier = models.CharField(max_length=10, unique=True, null=True)
     avatar = models.ImageField(default='default_profile.jpg')
     shop = models.ForeignKey('shop.Shop', on_delete=models.SET_NULL, blank=True, null=True)
-    register_timestamp = models.DateTimeField()
+    register_timestamp = models.DateTimeField(auto_now_add=True)
     phone = models.CharField(max_length=20, blank=True, null=True)
 
     def __str__(self):
@@ -68,7 +68,7 @@ class Inventory(models.Model):
     is_featured = models.BooleanField(default=False)
     timestamp = models.DateTimeField(auto_now_add=True)
     in_deals = models.BooleanField(default=False)
-    discount = models.IntegerField(default=0)
+    discount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     # options = 
     supplier = models.ForeignKey('dash.Supplier', on_delete=models.SET_NULL, blank=True, null=True)
 
@@ -101,7 +101,7 @@ class Delivery(models.Model):
     quantity = models.PositiveIntegerField()
     price = models.DecimalField(max_digits=10, decimal_places=2)
     units = models.CharField(max_length=20)
-    discount = models.PositiveIntegerField(default=0)
+    discount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     status = models.CharField(max_length=20, default='processing')
     admin = models.ForeignKey('auth.User', on_delete=models.SET_NULL, blank=True, null=True, related_name='admin')
     driver = models.ForeignKey('dash.ShopStaff', on_delete=models.SET_NULL, blank=True, null=True, related_name='staff')

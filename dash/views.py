@@ -16,6 +16,11 @@ def my_shop(request):
     return get_object_or_404(Shop, owner=request.user)
 
 
+# Get % off
+def percent_off(price, sale):
+    return (float(sale) / 100) * float(price)
+
+
 def index(request):
     context = {}
     return render(request, 'dash/index.html', context)
@@ -433,6 +438,8 @@ def shop_profile_view(request):
         phone = request.POST.get('phone')
         insta = request.POST.get('instagram')
         twitter = request.POST.get('twitter')
+        title1 = request.POST.get('title1')
+        title2 = request.POST.get('title2')
         source = request.POST.get('source')
 
         if source == 'update_profile':
@@ -455,8 +462,60 @@ def shop_profile_view(request):
                 shop.image2 = image2
 
             shop.save()
-            messages.success(request, 'Shop profile updated')
+            messages.success(request, 'Shop profile updated.')
+            return redirect('shop_profile')
+
+        elif source == 'settings_form':
+            shop.title1 = title1
+            shop.title2 = title2
+            shop.save()
+            messages.success(request, 'Landing page titles updated.')
             return redirect('shop_profile')
 
     context = {'my_shop': shop}
     return render(request, 'dash/shop_profile.html', context)
+
+
+def deals_and_promos_view(request):
+    shop = my_shop(request)
+
+    if request.method == 'POST':
+        product = request.POST.get('product')
+        amount = request.POST.get('amount')
+        source = request.POST.get('source')
+        product_instance = get_object_or_404(Inventory, product_id=product)
+
+        if source == 'new_discount':
+            product_instance.discount = amount
+            product_instance.save()
+            messages.success(request, f'KSH. {amount} discount set for {product_instance.product}')
+            return redirect('deals_and_promos')
+
+        elif source == 'new_percent_off':
+            product_instance.discount = percent_off(product_instance.price, amount)
+            product_instance.save()
+            messages.success(request, f'{amount}% discount set for {product_instance.product}')
+            return redirect('deals_and_promos')
+
+
+    all_products = Inventory.objects.filter(shop=shop, in_deals=False)
+    context = {'products': all_products}
+    return render(request, 'dash/deals_and_promos.html', context)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -12,14 +12,14 @@
 
 <section id="home-section" class="hero">
     <div class="home-slider owl-carousel">
-        <div class="slider-item" style="background-image: url(/static/shop/images/bg_1.jpg);">
+        <div class="slider-item" style="background-image: url('{{ the_shop.avatar.url }}');">
             <div class="overlay"></div>
             <div class="container">
                 <div class="row slider-text justify-content-center align-items-center" data-scrollax-parent="true">
 
                     <div class="col-md-12 ftco-animate text-center">
-                        <p class="mb-2 text-light" style="font-size: xx-large; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">We serve Fresh Vegestables &amp; Fruits</p>
-                        <h2 class="subheading mb-4">We deliver organic vegetables &amp; fruits</h2>
+                        <p class="mb-2 text-light" style="font-size: xx-large; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">{{ the_shop.title1|title }}</p>
+                        <h2 class="subheading mb-4">W organic vegetables &amp; fruits</h2>
                         <p><a href="#" class="btn btn-primary">View Details</a></p>
                     </div>
 
@@ -27,13 +27,13 @@
             </div>
         </div>
 
-        <div class="slider-item" style="background-image: url(/static/shop/images/bg_2.jpg);">
+        <div class="slider-item" style="background-image: url('{{ the_shop.image1.url }}');">
             <div class="overlay"></div>
             <div class="container">
                 <div class="row slider-text justify-content-center align-items-center" data-scrollax-parent="true">
 
                     <div class="col-sm-12 ftco-animate text-center">
-                        <p class="mb-2 text-light" style="font-size: xx-large; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">100% Fresh &amp; Organic Foods</p>
+                        <p class="mb-2 text-light" style="font-size: xx-large; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">{{ the_shop.title2|title }}</p>
                         <h2 class="subheading mb-4">We deliver organic vegetables &amp; fruits</h2>
                         <p><a href="#" class="btn btn-primary">View Details</a></p>
                     </div>

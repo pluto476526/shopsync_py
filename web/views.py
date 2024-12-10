@@ -22,16 +22,26 @@ def home(request):
         owner = request.user
         name = request.POST.get('name')
         bio = request.POST.get('bio')
-        avatar = request.FILES.get('avatar')
-        
-        if name:
-            Shop.objects.create(owner=owner, name=name, bio=bio, avatar=avatar)
+        category = request.POST.get('category')
+        source = request.POST.get('source')
+
+        if source == 'new_shop':
+            category_instance = get_object_or_404(ShopCategory, category=category)
+            Shop.objects.create(
+                owner = owner,
+                name = name,
+                bio = bio,
+                shop_category = category_instance,
+            )
             messages.success(request, f'{name} registered')
             return redirect('home')
     
     shops = Shop.objects.all()
     shop_categories = ShopCategory.objects.all()
-    context = {'available_shops': shops, 'shop_categories': shop_categories}
+    context = {
+        'available_shops': shops,
+        'shop_categories': shop_categories,
+    }
     return render(request, 'web/index.html', context)
 
 
