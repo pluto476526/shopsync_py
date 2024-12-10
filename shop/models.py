@@ -19,6 +19,8 @@ class Shop(models.Model):
     avatar = models.ImageField(default='shop_profile.jpg')
     image1 = models.ImageField(default='shop_profile1.jpg')
     image2 = models.ImageField(default='shop_profile2.jpg')
+    title1 = models.CharField(max_length=50, blank=True, null=True)
+    title2 = models.CharField(max_length=50, blank=True, null=True)
     shop_category = models.ForeignKey('shop.ShopCategory', on_delete=models.SET_NULL, null=True, related_name='shop_category')
     location = models.CharField(max_length=20, blank=True, null=True)
     address = models.CharField(max_length=100, blank=True, null=True)

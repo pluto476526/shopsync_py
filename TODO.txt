@@ -4,3 +4,4 @@ check how i can fetch 3 random items from the database
 learn how to redirect back using request.meta
 change all description inputs to textareas
 create help_requests view and html file in the dash
+check login functionality

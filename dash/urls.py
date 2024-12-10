@@ -17,6 +17,7 @@ urlpatterns = [
     path('sales/physical/', views.physical_sales_view, name='physical_sales'),
     path('helpdesk/', views.user_helpdesk_view, name='helpdesk'),
     path('profile/', views.shop_profile_view, name='shop_profile'),
+    path('deals_and_promos/', views.deals_and_promos_view, name='deals_and_promos'),
 ]
 
 
