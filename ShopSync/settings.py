@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'chats.apps.ChatsConfig',
     'dash.apps.DashConfig',
     'shop.apps.ShopConfig',
+    'main.apps.MainConfig',
     'crispy_forms',
     'crispy_bootstrap5',
     'rest_framework',
@@ -74,8 +75,8 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
-                'web.context_processors.get_company',
                 'dash.context_processors.get_order',
+                'dash.context_processors.the_shop',
             ],
         },
     },
@@ -153,7 +154,7 @@ CRISPY_TEMPLATE_PACK = 'bootstrap5'
 
 
 # Implement custom logger
-# Define path for the log file
+
 LOG_FILE_PATH = os.path.join(BASE_DIR, 'debug.log')
 
 

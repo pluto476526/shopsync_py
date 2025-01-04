@@ -1,7 +1,13 @@
-check why a new category is being created each time i add a product
-timer
-check how i can fetch 3 random items from the database
 learn how to redirect back using request.meta
 change all description inputs to textareas
-create help_requests view and html file in the dash
-check login functionality
+deal with the online sales html page and view
+cols that stack on small screens
+work on the register shop process. make sure shops are not registered immediately.
+
+
+register total sales in all models
+last active at shop.views.py
+
+
+make an error page and their views
+css property for images

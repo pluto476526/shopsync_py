@@ -1,13 +1,23 @@
 from django.contrib import admin
-from dash.models import Profile, Category, Inventory, Supplier, Delivery, ShopStaff, PaymentMethod, HelpDesk
+from dash.models import (
+    Profile,
+    Category,
+    Inventory,
+    Supplier,
+    Delivery,
+    PaymentMethod,
+    TodaysDeal,
+    Units,
+    LowStockThreshold,
+)
 
-# Register your models here.
 
 admin.site.register(Profile)
 admin.site.register(Category)
 admin.site.register(Inventory)
 admin.site.register(Supplier)
 admin.site.register(Delivery)
-admin.site.register(ShopStaff)
 admin.site.register(PaymentMethod)
-admin.site.register(HelpDesk)
+admin.site.register(TodaysDeal)
+admin.site.register(Units)
+admin.site.register(LowStockThreshold)

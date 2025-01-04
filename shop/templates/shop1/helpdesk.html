@@ -1,0 +1,172 @@
+{% extends 'shop/main.html' %}
+{% load static %}
+{% block main %}
+{% if messages %}
+{% for message in messages %}
+
+<div
+  class="alert alert-info alert-dismissible fade show text-center"
+  role="alert"
+>
+  {{ message }}
+</div>
+{% endfor %} {% endif %}
+
+<div
+  class="hero-wrap hero-bread"
+  style="background-image: url('{{ the_shop.avatar.url }}');"
+>
+  <div class="container">
+    <div
+      class="row no-gutters slider-text align-items-center justify-content-center"
+    >
+      <div class="col-md-9 ftco-animate text-center">
+        <h1 class="mb-0 bread">Help Desk</h1>
+      </div>
+    </div>
+  </div>
+</div>
+
+<section class="ftco-section">
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-xl-5">
+        <div class="row mt-5 pt-3">
+          <div class="col-md-12 mb-5">
+            <div class="cart-detail p-3 p-md-4">
+              Lorem ipsum dolor sit amet consectetur, adipisicing elit. Illum
+              perspiciatis corporis commodi consequuntur quia sunt, velit libero
+              magnam nihil voluptatem labore aliquid placeat modi fuga dolores
+              laborum! Voluptas quia qui unde enim necessitatibus. Nobis sed
+              porro ea eligendi libero minima ducimus doloribus. Odio, rem nihil
+              dolorem unde sint, ad perferendis quam est aliquam rerum
+              repellendus quidem quae tenetur corporis harum voluptatibus beatae
+              ex vel. Asperiores dolorem, laborum distinctio deleniti quae
+              quidem voluptates vero modi ratione necessitatibus, expedita
+              corporis rem, consequuntur voluptatibus error. Accusamus et,
+              reiciendis, sequi voluptatem quam voluptatum dicta sint quaerat
+              sunt hic harum dolorum explicabo iste deserunt ipsum.
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-xl-7 ftco-animate">
+        <form class="billing-form" method="post">
+          {% csrf_token %}
+          <h3 class="mb-4 billing-heading">Raise Ticket</h3>
+          <div class="row align-items-end">
+            <div class="col-md-6">
+              <div class="form-group">
+                <label>Phone</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  value="{{ request.user.phone }}"
+                  name="phone"
+                  required
+                />
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="form-group">
+                <label>Email</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  value="{{ request.user.email }}"
+                  name="email"
+                />
+              </div>
+            </div>
+            <div class="w-100"></div>
+            <div class="col-md-12">
+              <div class="form-group">
+                <label>Issue</label>
+                <input type="text" class="form-control" name="issue" required />
+              </div>
+            </div>
+            <div class="w-100"></div>
+            <div class="col-md-12">
+              <div class="form-group">
+                <label>Description</label>
+                <textarea
+                  name="description"
+                  class="form-control"
+                  rows="10"
+                  required
+                ></textarea>
+              </div>
+            </div>
+            <input type="hidden" name="source" value="send_issue" />
+            <div class="w-100"></div>
+            <div class="col-md-12">
+              <div class="cart-detail p-3 p-md-4">
+                <p>
+                  <button class="btn btn-primary py-3 px-4" type="submit">
+                    Get Ticket
+                  </button>
+                </p>
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="ftco-section">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-12 ftco-animate">
+        <div class="sidebar-box ftco-animate">
+            {% for issue in issues %}
+          <div class="block-21 mb-4 d-flex p-3 rounded {% if issue.is_sorted == True %}bg-success{% else %}bg-danger{% endif %}">
+            <a
+              class="blog-img mr-4"
+              style="background-image: url(images/image_3.jpg)"
+            ></a>
+            <div class="text">
+                <p>
+                    <strong class="text-light">{{ issue.issue|title }}</strong>
+                </p>
+              <h3 class="heading-1 text-light">{{ issue.description|capfirst }}</h3>
+              <div class="meta">
+                <div>
+                  <p class="text-light">
+                    <span class="icon-chat"></span>
+                     {{ issue.help_id }}
+                  </p>
+                </div>
+                <div>
+                  <p class="text-light">
+                    <span class="icon-calendar"></span>
+                     {{ issue.timestamp }}
+                  </p>
+                </div>
+                <div>
+                  <p class="text-light">
+                    <span class="icon-person"></span>
+                     {{ issue.status|title }}
+                  </p>
+                </div>
+                {% if issue.admin and issue.admin != None %}
+                <div>
+                  <p class="text-light">
+                    <span class="icon-person"></span>
+                     {{ issue.admin.username|title }}
+                  </p>
+                </div>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+          <hr>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+{% endblock %}

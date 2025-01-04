@@ -1,5 +1,6 @@
 {% extends 'dash/main.html' %}
 {% load static %}
+{% load humanize %}
 {% block main %}
 <div class="content-wrapper">
     <div class="row">
@@ -32,8 +33,8 @@
                                 <tr>
                                     <td>{{ product.product.product|capfirst }}</td>
                                     <td>{{ product.category.category|capfirst }}</td>
-                                    <td>KSH. {{ product.price }} per {{ product.units }}</td>
-                                    <td>{{ product.quantity }} {{ product.units }}</td>
+                                    <td>KSH. {{ product.price|intcomma }} per {{ product.units.units }}</td>
+                                    <td>{{ product.quantity|intcomma }} {{ product.units.units }}</td>
                                     <td>KSH. {{ product.total }}</td>
                                     <td class="d-flex justify-content-start">
                                         <button class="badge badge-info" type="button" data-bs-toggle="modal"
@@ -52,14 +53,25 @@
                                                         <!-- Floating Labels Form -->
                                                         <form class="row g-3" method="post">
                                                             {% csrf_token %}
+                                                            {% if product.username %}
                                                             <div class="col-md-12">
                                                                 <div class="form-floating">
                                                                     <input type="text" class="form-control"
-                                                                        value="{{ product.username.username|capfirst }}"
+                                                                        value="{{ product.username.username|title }}"
                                                                         readonly>
                                                                     <label>Customer Name</label>
                                                                 </div>
                                                             </div>
+                                                            {% elif product.unregistered_user %}
+                                                            <div class="col-md-12">
+                                                                <div class="form-floating">
+                                                                    <input type="text" class="form-control"
+                                                                        value="{{ product.unregistered_user|title }}"
+                                                                        readonly>
+                                                                    <label>Customer Name</label>
+                                                                </div>
+                                                            </div>
+                                                            {% endif %}
                                                             <div class="col-md-12">
                                                                 <div class="form-floating">
                                                                     <input type="text" class="form-control"
@@ -67,6 +79,7 @@
                                                                     <label>Phone Number</label>
                                                                 </div>
                                                             </div>
+                                                            {% if product.email %}
                                                             <div class="col-md-12">
                                                                 <div class="form-floating">
                                                                     <input type="text" class="form-control"
@@ -74,20 +87,22 @@
                                                                     <label>Email Address</label>
                                                                 </div>
                                                             </div>
+                                                            {% endif %}
                                                             <div class="col-md-6">
                                                                 <div class="form-floating">
-                                                                    <input type="number" class="form-control"
-                                                                        value="{{ product.county }}" readonly>
+                                                                    <input type="text" class="form-control"
+                                                                        value="{{ product.county|title }}" readonly>
                                                                     <label>County</label>
                                                                 </div>
                                                             </div>
                                                             <div class="col-md-6">
                                                                 <div class="form-floating">
-                                                                    <input type="number" class="form-control"
-                                                                        value="{{ product.town }}" readonly>
+                                                                    <input type="text" class="form-control"
+                                                                        value="{{ product.town|title }}" readonly>
                                                                     <label>Town</label>
                                                                 </div>
                                                             </div>
+                                                            {% if product.address %}
                                                             <div class="col-md-12">
                                                                 <div class="form-floating">
                                                                     <input type="text" class="form-control"
@@ -95,6 +110,7 @@
                                                                     <label>Delivery Address</label>
                                                                 </div>
                                                             </div>
+                                                            {% endif %}
                                                             <div class="col-md-12">
                                                                 <div class="form-floating">
                                                                     <input type="text" class="form-control"
@@ -120,7 +136,7 @@
                                                             <div class="col-md-6">
                                                                 <div class="form-floating">
                                                                     <input class="form-control"
-                                                                        value="{{ product.units }}" readonly>
+                                                                        value="{{ product.units.units }}" readonly>
                                                                     <label>Units</label>
                                                                 </div>
                                                             </div>
@@ -140,10 +156,10 @@
                                                             </div>
                                                             <div class="col-md-12">
                                                                 <div class="form-floating">
-                                                                    <input type="number" class="form-control"
-                                                                        value="{{ product.timestamp|timesince }}"
+                                                                    <input type="text" class="form-control"
+                                                                        value="{{ product.timestamp|timesince }} ago"
                                                                         readonly>
-                                                                    <label>Created On</label>
+                                                                    <label>Order Placed</label>
                                                                 </div>
                                                             </div>
                                                             <input type="hidden" name="source" value="confirm_delivery">

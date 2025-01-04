@@ -1,24 +1,48 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib import messages
 from django.contrib.auth.models import User
-from django.db import models
-from dash.models import Category, Inventory, Supplier, Delivery, ShopStaff, PaymentMethod, HelpDesk
-from shop.models import Shop
+from django.contrib import messages
+from django.utils.decorators import method_decorator
+from django.views.decorators.http import require_http_methods
+from django.db import transaction, models
+from shop.models import Shop, ShopHelpDesk
+from main.models import MainHelpDesk
 from datetime import datetime
 import logging
+from dash.models import (
+    Category,
+    Inventory,
+    Supplier,
+    Delivery,
+    PaymentMethod,
+    Coupon,
+    Profile,
+    Role,
+    Units,
+    LowStockThreshold,
+)
 
-
-# Get logger
+# Logger setup
 logger = logging.getLogger(__name__)
 
-# Get users shop
-def my_shop(request):
-    return get_object_or_404(Shop, owner=request.user)
+def get_user_shop(request):
+    """Retrieve the shop associated with the current user's profile."""
+    try:
+        profile = Profile.objects.get(user=request.user)
+        shop = Shop.objects.get(name=profile.shop.name)
+        return shop
+    except (Profile.DoesNotExist, Shop.DoesNotExist) as e:
+        logger.error(f"Error retrieving shop: {e}")
+        messages.error(request, "Shop not found.")
+        return None
 
 
-# Get % off
 def percent_off(price, sale):
-    return (float(sale) / 100) * float(price)
+    """Calculate percentage off for a price."""
+    try:
+        return (float(sale) / 100) * float(price)
+    except (ValueError, TypeError) as e:
+        logger.error(f"Invalid input for percent_off: {e}")
+        return 0
 
 
 def index(request):
@@ -26,223 +50,298 @@ def index(request):
     return render(request, 'dash/index.html', context)
 
 
+@require_http_methods(["GET", "POST"])
 def categories(request):
+    shop = get_user_shop(request)
+    if not shop:
+        return redirect('error_page')  # Handle case where shop is not found.
+
     if request.method == 'POST':
-        category_name = request.POST.get('category')
-        description = request.POST.get('description')
+        category_name = request.POST.get('category', '').strip()
+        description = request.POST.get('description', '').strip()
         avatar = request.FILES.get('avatar')
-        source = request.POST.get('source')
+        source = request.POST.get('source', '').strip()
         category_id = request.POST.get('category_id')
-        is_featured = request.POST.get('is_featured')
+        is_featured = request.POST.get('is_featured', '').lower() == 'true'
 
-        if source == 'new_category':
-            Category.objects.create(shop=my_shop(request), category=category_name, description=description)
-            messages.success(request, 'Category added')
+        if not category_name or not source:
+            messages.error(request, "Category name and source are required.")
             return redirect('categories')
-
-        elif source == 'edit_category':
-            category = get_object_or_404(Category, id=category_id)
-            category.category = category_name
-            category.description = description
-
-            if is_featured:
-                category.is_featured = is_featured
-
-            if avatar:
-                category.avatar = avatar
-
-            category.save()
-            messages.success(request, f'{category.category} Category edited')
-            return redirect('categories')
-
-    my_categories = Category.objects.filter(shop=my_shop(request))
-    context = {'categories': my_categories}
-    return render(request, 'dash/categories.html', context)
-
-
-def inventory_view(request):
-    if request.method == 'POST':
-        product_name = request.POST.get('product')
-        category_name = request.POST.get('category')
-        description = request.POST.get('description')
-        quantity = request.POST.get('quantity')
-        units = request.POST.get('units')
-        price = request.POST.get('price')
-        is_featured = request.POST.get('is_featured')
-        source = request.POST.get('source')
-        product_id = request.POST.get('id')
-        avatar = request.FILES.get('avatar')
-        category, created = Category.objects.get_or_create(category=category_name, shop=my_shop(request))
-
-        if source == 'edit_product':
-            product_obj = get_object_or_404(Inventory, id=product_id)
-            product_obj.product = product_name
-            product_obj.description = description
-            product_obj.quantity = quantity
-            product_obj.price = price
-            product_obj.category = category
-            
-            if is_featured:
-                product_obj.is_featured = is_featured
-
-            if avatar:
-                product_obj.avatar = avatar
-
-            if units:
-                product_obj.units = units
-
-            product_obj.save()
-            messages.success(request, f'{product_obj} edited')
-            return redirect('inventory')
-
-        elif source == 'new_product':
-            Inventory.objects.create(
-                shop = my_shop(request),
-                product = product_name,
-                category = category,
-                description = description,
-                quantity = quantity,
-                units = units,
-                price = price,
-                is_featured = is_featured if is_featured else False,
-                **({"avatar": avatar} if avatar else {}),
-            )
-            messages.success(request, f'{product_name} added to inventory')
-            return redirect('inventory')
-
-    products = Inventory.objects.filter(shop=my_shop(request), status='available')
-    categories = Category.objects.filter(shop=my_shop(request))
-    context = {'products': products, 'categories': categories}
-    return render(request, 'dash/inventory.html', context)
-
-
-def orders_view(request):
-    if request.method == 'POST':
-        product = request.POST.get('product')
-        category_name = request.POST.get('category')
-        description = request.POST.get('description')
-        quantity = request.POST.get('quantity')
-        units = request.POST.get('units')
-        source = request.POST.get('source')
-        supplier_name = request.POST.get('supplier')
-        order_id = request.POST.get('id')
-
-        if supplier_name:
-            supplier, sup_created = Supplier.objects.get_or_create(name=supplier_name, shop=my_shop(request))
-
-        if category_name:
-            category, created = Category.objects.get_or_create(category=category_name, shop=my_shop(request))
-
-        if source == 'new_order':
-            Inventory.objects.create(
-                shop = my_shop(request),
-                supplier = supplier,
-                product = product,
-                category = category,
-                description = description,
-                quantity = quantity,
-                units = units,
-                status = 'ordered',
-            )
-            messages.success(request, f'Order for {quantity} {units} of {product} prepared')
-            return redirect('orders')
-
-        elif source == 'edit_order':
-            order = get_object_or_404(Inventory, id=order_id)
-            order.supplier = supplier
-            order.product = product
-            order.category = category
-            order.description = description
-            order.quantity = quantity
-
-            if units:
-                order.units = units
-
-            order.save()
-            messages.success(request, f'Order for {quantity} {units} of {product} edited')
-            return redirect('orders')
-
-        elif source == 'receive':
-            order = get_object_or_404(Inventory, id=order_id)
-            order.description = 'None'
-            order.status = 'available'
-            order.save()
-            messages.success(request, f'{order.quantity} {order.units} of {order.product} added to inventory')
-            return redirect('orders')
-
-    categories = Category.objects.filter(shop=my_shop(request))
-    orders = Inventory.objects.filter(shop=my_shop(request), status='ordered')
-    suppliers = Supplier.objects.filter(shop=my_shop(request))
-    context = {'products': orders, 'categories': categories, 'suppliers': suppliers}
-    return render(request, 'dash/orders.html', context)
-
-
-def deliveries_view(request):
-    if request.method == 'POST':
-        customer = request.POST.get('username')
-        product = request.POST.get('product')
-        quantity = request.POST.get('quantity')
-        source = request.POST.get('source')
-        order_id = request.POST.get('id')
-        phone = request.POST.get('phone')
-        order_no = request.POST.get('order_number')
 
         try:
-            username = User.objects.get(username=customer)
+            with transaction.atomic():
+                if source == 'new_category':
+                    Category.objects.create(
+                        shop=shop,
+                        category=category_name,
+                        description=description,
+                    )
+                    messages.success(request, "Category added successfully.")
+                elif source == 'edit_category':
+                    category = get_object_or_404(Category, id=category_id)
+                    category.category = category_name
+                    category.description = description
+                    if is_featured:
+                        category.is_featured = is_featured
+                    if avatar:
+                        category.avatar = avatar
+                    category.save()
+                    messages.success(request, f"{category_name} updated successfully.")
+        except Exception as e:
+            logger.error(f"Error in category operation: {e}")
+            messages.error(request, "Failed to process the category.")
+        return redirect('categories')
 
-        except User.DoesNotExist:
-            username = None
+    my_categories = Category.objects.filter(shop=shop)
+    return render(request, 'dash/categories.html', {'categories': my_categories})
 
-        if source == 'new_delivery':
-            selected_product = get_object_or_404(Inventory, product=product)
-            category_instance = get_object_or_404(Category, category=selected_product.category.category)
-            Delivery.objects.create(
-                shop = my_shop(request),
-                username = username,
-                unregistered_user = customer,
-                order_number = order_no,
-		        prod_id = selected_product.product_id,
-                category = category_instance,
-                product = selected_product,
-                quantity = quantity,
-                price = selected_product.price,
-                units = selected_product.units,
-                total = int(selected_product.price) * int(quantity),
-                phone = phone,
-            )
-            messages.success(request, f'Delivery request for {quantity} {selected_product.units} of {selected_product.product} created')
-            return redirect('deliveries')
+@require_http_methods(["GET", "POST"])
+def inventory_view(request):
+    try:
+        shop = get_user_shop(request)
+        if not shop:
+            return redirect('error_page')
 
-        elif source == 'confirm_delivery':
-            delivery = get_object_or_404(Delivery, id=order_id)
-            delivery.status = 'confirmed'
-            delivery.time_confirmed = datetime.now()
-            delivery.admin = request.user
-            delivery.save()
-            messages.success(request, f'Delivery request for {delivery.quantity} {delivery.units} of {delivery.product.product} confirmed')
-            return redirect('deliveries')
+        if request.method == 'POST':
+            product_name = request.POST.get('product', '').strip()
+            category_name = request.POST.get('category', '').strip()
+            description = request.POST.get('description', '').strip()
+            quantity = request.POST.get('quantity')
+            units = request.POST.get('units', '').strip()
+            price = request.POST.get('price')
+            is_featured = request.POST.get('is_featured', '').lower() == 'true'
+            source = request.POST.get('source', '').strip()
+            product_id = request.POST.get('id')
+            avatar = request.FILES.get('avatar')
 
-        elif source == 'confirm_multiple':
-            mult_orders = Delivery.objects.filter(order_number=order_no)
+            if not product_name or not source:
+                messages.error(request, "Product name and source are required.")
+                return redirect('inventory')
+
+            with transaction.atomic():
+                category, _ = Category.objects.get_or_create(category=category_name, shop=shop)
+                unit = get_object_or_404(Units, units=units)
+
+                if source == 'edit_product':
+                    product = get_object_or_404(Inventory, id=product_id)
+                    product.product = product_name
+                    product.category = category
+                    product.description = description
+                    product.quantity = quantity
+                    product.units = unit
+                    product.price = price
+                    product.is_featured = is_featured
+                    if avatar:
+                        product.avatar = avatar
+                    product.save()
+                    messages.success(request, f"{product_name} updated successfully.")
+                elif source == 'new_product':
+                    Inventory.objects.create(
+                        shop=shop,
+                        product=product_name,
+                        category=category,
+                        description=description,
+                        quantity=quantity,
+                        units=unit,
+                        price=price,
+                        is_featured=is_featured,
+                        **({"avatar": avatar} if avatar else {}),
+                    )
+                    messages.success(request, f"{product_name} added successfully.")
+
+            return redirect('inventory')
+
+        products = Inventory.objects.filter(shop=shop, status='available')
+        categories = Category.objects.filter(shop=shop)
+        units = Units.objects.filter(shop=shop)
+        context = {
+            'products': products,
+            'categories': categories,
+            'units': units
+        }
+        return render(request, 'dash/inventory.html', context)
+
+    except Exception as e:
+        logger.error(f"Error in inventory operation: {e}")
+        messages.error(request, "Failed to process the inventory.")
+        return redirect('inventory')
+
+@transaction.atomic
+def orders_view(request):
+    shop = get_user_shop(request)
+    if not shop:
+        return redirect('error_page')  # Handle missing shop case.
+
+    if request.method == 'POST':
+        product = request.POST.get('product', '').strip()
+        product_id = request.POST.get('product_id')
+        category_name = request.POST.get('category', '').strip()
+        instr = request.POST.get('instructions', '').strip()
+        quantity = request.POST.get('quantity')
+        p_units = request.POST.get('units', '').strip()
+        source = request.POST.get('source', '').strip()
+        supplier_name = request.POST.get('supplier', '').strip()
+        order_id = request.POST.get('id')
+
+        try:
+            if supplier_name:
+                supplier, _ = Supplier.objects.get_or_create(shop=shop, name=supplier_name)
+
+            if category_name:
+                category, _ = Category.objects.get_or_create(shop=shop, category=category_name)
+
+            if p_units:
+                p_unit, _ = Units.objects.get_or_create(shop=shop, units=p_units)
             
-            for o in mult_orders:
-                o.status = 'confirmed'
-                o.time_confirmed = datetime.now()
-                o.admin = request.user
+            if source == 'new_order':
+                Inventory.objects.create(
+                    shop = shop,
+                    supplier = supplier,
+                    product = product,
+                    category = category,
+                    order_instructions = instr,
+                    order_amount = quantity,
+                    units = p_unit,
+                    status = 'ordered',
+                    available = False,
+                    in_orders = True,
+                )
+                messages.success(request, f"Order for {quantity} {p_units} of {product} prepared.")
 
-            Delivery.objects.bulk_update(mult_orders, ['status', 'time_confirmed', 'admin'])
-            messages.success(request, f'Order /#{order_no} confirmed')
-            return redirect('deliveries')
-    
-    requests = Delivery.objects.filter(shop=my_shop(request), status='processing') 
+            elif source == 'new_order2':
+                prod_instance = get_object_or_404(Inventory, product_id=product_id)
+                prod_instance.order_amount = quantity
+                prod_instance.in_orders = True
+                prod_instance.supplier = supplier
+                prod_instance.order_instructions = instr
+                prod_instance.save()
+                messages.success(request, f"Order for {prod_instance.quantity} {prod_instance.product} prepared.")
+
+            elif source == 'edit_order':
+                order = get_object_or_404(Inventory, id=order_id)
+                order.supplier = supplier or order.supplier
+                order.product = product
+                order.category = category or order.category
+                order.order_instructions = instr
+                order.order_amount = quantity
+                order.units = p_unit or order.units
+                order.save()
+                messages.success(request, f"Order for {order.quantity} {order.units.units} of {order.product} edited.")
+
+            elif source == 'receive':
+                order = get_object_or_404(Inventory, id=order_id)
+                order.status = 'available'
+                order.quantity += order.order_amount
+                order.order_amount = 0
+                order.in_orders = False
+                order.save()
+                messages.success(request, f"{order.quantity} {order.units.units} of {order.product} added to inventory.")
+
+        except Exception as e:
+            logger.error(f"Error processing order: {e}")
+            messages.error(request, "Failed to process the order.")
+
+        return redirect('orders')
+
+    try:
+        th = LowStockThreshold.objects.get(shop=shop)
+        threshold = th.threshold
+    except Exception:
+        threshold = 0
+    low_stocks = Inventory.objects.filter(shop=shop, quantity__lt=threshold)
+    categories = Category.objects.filter(shop=shop)
+    orders = Inventory.objects.filter(shop=shop, in_orders=True)
+    suppliers = Supplier.objects.filter(shop=shop)
+    units = Units.objects.filter(shop=shop)
+    context = {
+        'products': orders,
+        'categories': categories,
+        'suppliers': suppliers,
+        'low_stock_products': low_stocks,
+        'units': units,
+    }
+    return render(request, 'dash/orders.html', context)
+
+@transaction.atomic
+def deliveries_view(request):
+    shop = get_user_shop(request)
+    if not shop:
+        return redirect('error_page')
+
+    if request.method == 'POST':
+        customer = request.POST.get('username', '').strip()
+        quantity = request.POST.get('quantity')
+        source = request.POST.get('source', '').strip()
+        order_id = request.POST.get('id')
+        phone = request.POST.get('phone', '').strip()
+        order_no = request.POST.get('order_number', '').strip()
+        product_id = request.POST.get('product_id')
+
+        try:
+            user = None
+            if customer:
+                user = User.objects.filter(username=customer).first()
+
+            if source == 'new_delivery':
+                selected_product = get_object_or_404(Inventory, product_id=product_id)
+                if int(quantity) <= selected_product.quantity:
+                    Delivery.objects.create(
+                        shop=shop,
+                        username=user,
+                        unregistered_user=customer,
+                        order_number=order_no,
+                        prod_id=selected_product.product_id,
+                        category=selected_product.category,
+                        product=selected_product,
+                        quantity=quantity,
+                        price=float(selected_product.price) - float(selected_product.discount),
+                        units=selected_product.units,
+                        total=(float(selected_product.price) - float(selected_product.discount)) * float(quantity),
+                        phone=phone,
+                    )
+                    selected_product.quantity -= int(quantity)
+                    selected_product.save()
+                    messages.success(request, f"Delivery for {quantity} {selected_product.units} of {selected_product.product} created.")
+                else:
+                    messages.error(request, f"Only {selected_product.quantity} {selected_product.units} available.")
+            elif source == 'confirm_delivery':
+                delivery = get_object_or_404(Delivery, id=order_id)
+                delivery.status = 'confirmed'
+                delivery.time_confirmed = datetime.now()
+                delivery.admin = request.user
+                delivery.save()
+                sale_category = get_object_or_404(Category, category=delivery.category.category)
+                sale_category.total_sales += delivery.total
+                sale_category.save()
+                shop.total_sales += delivery.total
+                shop.save()
+                messages.success(request, f"Delivery for {delivery.quantity} {delivery.product.product} confirmed.")
+            elif source == 'confirm_multiple':
+                mult_orders = Delivery.objects.filter(order_number=order_no)
+                mult_orders.update(status='confirmed', time_confirmed=datetime.now(), admin=request.user)
+                for o in mult_orders:
+                    logger.debug(o)
+                    category = get_object_or_404(Category, category=o.category.category)
+                    category.total_sales += o.total
+                    category.save()
+                    shop.total_sales += o.total
+                    shop.save()
+                messages.success(request, f"Order #{order_no} confirmed.")
+
+        except Exception as e:
+            logger.error(f"Error processing delivery: {e}")
+            messages.error(request, "Failed to process the delivery.")
+
+        return redirect('deliveries')
+
+    requests = Delivery.objects.filter(shop=shop, status='processing')
     dash_requests = requests.filter(source='dash')
-    cart_requests = requests.filter(source='cart')
-    cart_requests = cart_requests.values('order_number', 'status').annotate(
+    cart_requests = requests.filter(source='cart').values('order_number', 'status').annotate(
         total_quantity=models.Sum('quantity'),
         total_price=models.Sum('price'),
         item_count=models.Count('id')
     )
-    available_products = Inventory.objects.filter(shop=my_shop(request), status='available')
+    available_products = Inventory.objects.filter(shop=shop, status='available')
     context = {
         'available_products': available_products,
         'dash_requests': dash_requests,
@@ -251,62 +350,67 @@ def deliveries_view(request):
     return render(request, 'dash/deliveries.html', context)
 
 
+@transaction.atomic
 def confirmed_deliveries_view(request):
+    shop = get_user_shop(request)
+    if not shop:
+        return redirect('error_page')
+
     if request.method == 'POST':
-        address = request.POST.get('address')
-        source = request.POST.get('source')
+        address = request.POST.get('address', '').strip()
+        source = request.POST.get('source', '').strip()
         order_id = request.POST.get('id')
-        driver_name = request.POST.get('driver')
-        order_no = request.POST.get('order_number')
+        driver_name = request.POST.get('driver', '').strip()
+        order_no = request.POST.get('order_number', '').strip()
 
-        if driver_name:
-            driver, created = ShopStaff.objects.get_or_create(shop=my_shop(request), name=driver_name, job='driver')
+        try:
+            with transaction.atomic():
+                driver = None
+                if driver_name:
+                    driver, created = User.objects.get_or_create(username=driver_name)
+                    if created:
+                        messages.info(request, f"Driver {driver_name} created.")
 
-        if source == 'assign_multiple':
-            mult_orders = Delivery.objects.filter(order_number=order_no)
+                if source == 'assign_multiple':
+                    mult_orders = Delivery.objects.filter(order_number=order_no)
+                    if address:
+                        for order in mult_orders:
+                            order.address = address
+                    mult_orders.update(
+                        status='in_transit',
+                        time_in_transit=datetime.now(),
+                        driver=driver,
+                        admin=request.user
+                    )
+                    messages.success(request, f"Delivery #{order_no} assigned to {driver}.")
+                elif source == 'complete_multiple':
+                    Delivery.objects.filter(order_number=order_no).update(
+                        status='completed',
+                        time_completed=datetime.now(),
+                        admin=request.user
+                    )
+                    messages.success(request, f"Order #{order_no} marked as completed.")
+        except Exception as e:
+            messages.error(request, f"Error processing delivery: {e}")
+        return redirect('confirmed_deliveries')
 
-            if address:
-                order.address = address
-            
-            for order in mult_orders:
-                order.status = 'in_transit'
-                order.time_in_transit = datetime.now()
-                order.driver = driver
-                order.admin = request.user
-
-            Delivery.objects.bulk_update(mult_orders, ['status', 'time_in_transit','driver', 'admin'])
-            messages.success(request, f'Delivery #{order_no} assigned to {driver}')
-            return redirect('confirmed_deliveries')
- 
-        elif source == 'complete_multiple':
-            mult_orders = Delivery.objects.filter(order_number=order_no)
-
-            for order in mult_orders:
-                order.status = 'completed'
-                order.time_completed = datetime.now()
-                order.admin = request.user
-
-            Delivery.objects.bulk_update(mult_orders, ['status', 'time_completed', 'admin'])
-            messages.success(request, f'Order #{order.order_number} completed')
-            return redirect('confirmed_deliveries')
-
-    my_drivers = ShopStaff.objects.filter(shop=my_shop(request), job='driver')
-    all_deliveries = Delivery.objects.filter(shop=my_shop(request))
+    all_deliveries = Delivery.objects.filter(shop=shop)
     confirmed_deliveries = all_deliveries.filter(status='confirmed').values('order_number').annotate(
-        total_amount = models.Sum('total'),
-        item_count = models.Count('id')
+        total_amount=models.Sum('total'),
+        item_count=models.Count('id')
     )
-    deliveries_in_transit = all_deliveries.filter(status='in_transit').values('order_number').annotate(
-        total_amount = models.Sum('total'),
-        item_count = models.Count('id')
+    in_transit = all_deliveries.filter(status='in_transit').values('order_number').annotate(
+        total_amount=models.Sum('total'),
+        item_count=models.Count('id')
     )
     completed_deliveries = all_deliveries.filter(status='completed').values('order_number').annotate(
-        total_amount = models.Sum('total'),
-        item_count = models.Count('id')
+        total_amount=models.Sum('total'),
+        item_count=models.Count('id')
     )
+    my_drivers = User.objects.filter(groups__name='Drivers'),  # Assuming a Driver group exists.
     context = {
         'confirmed_deliveries': confirmed_deliveries,
-        'deliveries_in_transit': deliveries_in_transit,
+        'deliveries_in_transit': in_transit,
         'completed_deliveries': completed_deliveries,
         'my_drivers': my_drivers,
     }
@@ -314,208 +418,327 @@ def confirmed_deliveries_view(request):
 
 
 def track_order_view(request):
-    context = {}
-    return render(request, 'dash/track_order.html', context)
+    return render(request, 'dash/track_order.html', {})
 
 
 def order_details_view(request, order_id):
     orders = Delivery.objects.filter(order_number=order_id)
-    context = {'orders': orders}
-    return render(request, 'dash/order_details.html', context)
+    if not orders.exists():
+        messages.error(request, f"No orders found for Order ID {order_id}.")
+        return redirect('orders')
+    return render(request, 'dash/order_details.html', {'orders': orders})
 
 
 def online_sales_view(request):
-    sales = Delivery.objects.filter(shop=my_shop(request), source='cart', status='completed')  
+    shop = get_user_shop(request)
+    if not shop:
+        return redirect('error_page')
+
+    sales = Delivery.objects.filter(shop=shop, source='cart', status='completed')
     online_sales = sales.values('order_number').annotate(
-        total_amount = models.Sum('total'),
-        item_count = models.Count('id')
+        total_amount=models.Sum('total'),
+        item_count=models.Count('id')
     )
-    context = {'sales': online_sales}
-    return render(request, 'dash/online_sales.html', context)
+    return render(request, 'dash/online_sales.html', {'sales': online_sales})
 
 
+@transaction.atomic
 def physical_sales_view(request):
-    if request.method == 'POST':
-        customer = request.POST.get('customer')
-        phone = request.POST.get('phone')
-        product_no = request.POST.get('product_id')
-        quantity = request.POST.get('quantity')
-        order_no = request.POST.get('order_number')
-        payment_method = request.POST.get('payment_method')
-        source = request.POST.get('source')
+    try:
+        shop = get_user_shop(request)
+        if not shop:
+            return redirect('error_page')
 
-        if source == 'new_sale':
-            sel_product = get_object_or_404(Inventory, product_id=product_no)
-            payments = get_object_or_404(PaymentMethod, shop=my_shop(request), payment_method=payment_method)
-            category = get_object_or_404(Category, shop=my_shop(request), category=sel_product.category.category)
-            Delivery.objects.create(
-                shop = my_shop(request),
-                unregistered_user = customer,
-                order_number = order_no,
-                product = sel_product,
-                prod_id = sel_product.product_id,
-                category = category,
-                quantity = quantity,
-                price = sel_product.price,
-                units = sel_product.units,
-                total = float(quantity) * float(sel_product.price),
-                phone = phone,
-                payment_method = payments,
-                source = 'in_shop',
+        if request.method == 'POST':
+            customer = request.POST.get('username', '').strip()
+            phone = request.POST.get('phone', '').strip()
+            product_no = request.POST.get('product_id')
+            quantity = request.POST.get('quantity', 0)
+            order_no = request.POST.get('order_number', '').strip()
+            payment_method = request.POST.get('payment_method', '').strip()
+            source = request.POST.get('source', '').strip()
+
+            with transaction.atomic():
+                if source == 'new_sale':
+                    sel_product = get_object_or_404(Inventory, product_id=product_no)
+                    if int(quantity) > sel_product.quantity:
+                        messages.error(request, f"Insufficient stock for {sel_product.product}.")
+                        return redirect('physical_sales')
+
+                    payments = get_object_or_404(PaymentMethod, shop=shop, method=payment_method)
+                    totals = float(quantity) * float(sel_product.price)
+                    Delivery.objects.create(
+                        shop=shop,
+                        unregistered_user=customer,
+                        order_number=order_no,
+                        product=sel_product,
+                        prod_id=sel_product.id,
+                        category=sel_product.category,
+                        quantity=quantity,
+                        price=sel_product.price,
+                        units=sel_product.units,
+                        total=totals,
+                        phone=phone,
+                        payment_method=payments,
+                        source='in_shop',
+                    )
+                    sel_product.quantity -= int(quantity)
+                    sel_product.save()
+                    sale_category = get_object_or_404(Category, category=sel_product.category.category)
+                    sale_category.total_sales += totals
+                    sale_category.save()
+                    shop.total_sales += totals
+                    shop.save()
+                    logger.debug(shop.total_sales)
+                    messages.success(request, f"Order {order_no} created. Please confirm payment.")
+                elif source == 'confirm_payment':
+                    Delivery.objects.filter(shop=shop, order_number=order_no).update(
+                        status='completed',
+                        time_completed=datetime.now(),
+                        admin=request.user
+                    )
+                    messages.success(request, f"Order {order_no} payment confirmed.")
+
+        context = {
+            'available_products': Inventory.objects.filter(shop=shop, status='available'),
+            'p_method': PaymentMethod.objects.filter(shop=shop),
+            'pending_sales': Delivery.objects.filter(shop=shop, source='in_shop', status='processing').values(
+                'order_number').annotate(
+                total_amount=models.Sum('total'),
+                item_count=models.Count('id'),
+            ),
+            'completed_sales': Delivery.objects.filter(shop=shop, source='in_shop', status='completed').values(
+                'order_number').annotate(
+                total_amount=models.Sum('total'),
+                item_count=models.Count('id'),
+            ),
+        }
+        return render(request, 'dash/physical_sales.html', context)
+    except Exception as e:
+        messages.error(request, 'Error processing sale.')
+        logger.error(f"Error processing sale: {e}")
+        return redirect('physical_sales')
+
+def main_helpdesk_view(request):
+    shop = get_user_shop(request)
+    if not shop:
+        return redirect('error_page')
+
+    tickets = MainHelpDesk.objects.filter(username=request.user)
+
+    if request.method == 'POST':
+        issue = request.POST.get('issue', '').strip()
+        description = request.POST.get('description', '').strip()
+        phone = request.POST.get('phone', '').strip()
+        email = request.POST.get('email', '').strip()
+        source = request.POST.get('source', '').strip()
+
+        if source == 'new_ticket':
+            MainHelpDesk.objects.create(
+                shop=shop,
+                username=request.user,
+                issue=issue,
+                description=description,
+                phone=phone,
+                email=email,
             )
-            messages.success(request, f'Order {order_no} processing. Please confirm payment')
-            return redirect('physical_sales')
+            messages.success(request, "Ticket generated.")
+            return redirect('main_helpdesk_user')
 
-        elif source == 'confirm_payment':
-            mult_orders = Delivery.objects.filter(shop=my_shop(request), order_number=order_no)
-            for order in mult_orders:
-                order.status = 'completed'
-                order.admin = request.user
-                order.time_completed = datetime.now()
-
-            Delivery.objects.bulk_update(mult_orders, ['status', 'time_completed', 'admin',])
-            messages.success(request, f'Order #{order_no} completed')
-            return redirect('physical_sales')
-
-    available_products = Inventory.objects.filter(shop=my_shop(request), status='available')
-    pay_method = PaymentMethod.objects.filter(shop=my_shop(request))
-    pending_sales = Delivery.objects.filter(
-        shop = my_shop(request),
-        source = 'in_shop',
-        status = 'processing',
-    ).values('order_number').annotate(
-        total_amount = models.Sum('total'),
-        item_count = models.Count('id'),
-    )
-    completed_sales = Delivery.objects.filter(
-        shop = my_shop(request),
-        source = 'in_shop',
-        status = 'completed',
-    ).values('order_number').annotate(
-        total_amount = models.Sum('total'),
-        item_count = models.Count('id'),
-    )
-    context = {
-        'available_products': available_products,
-        'pay_method': pay_method,
-        'pending_sales': pending_sales,
-        'completed_sales': completed_sales,
-    }
-    return render(request, 'dash/physical_sales.html', context)
+    return render(request, 'dash/main_helpdesk.html', {'tickets': tickets})
 
 
-def delete_view(request, pk):
-    obj = get_object_or_404(Inventory, shop=my_shop(request), id=pk)
+def shop_helpdesk_view(request):
+    shop = get_user_shop(request)
+    if not shop:
+        return redirect('error_page')
+
+    issues = ShopHelpDesk.objects.filter(shop=shop)
+    pending_issues = issues.filter(is_sorted=False)
+    sorted_issues = issues.filter(is_sorted=True)
 
     if request.method == 'POST':
-        # Delete product
-        obj.delete()
-        messages.success(request, f'{obj} deleted')
-        return redirect('inventory')
+        status = request.POST.get('status', '').strip()
+        is_sorted = request.POST.get('is_sorted', '').lower() == 'true'
+        source = request.POST.get('source', '').strip()
+        tkt_id = request.POST.get('id')
 
-    context = {'obj': obj}
-    return render(request, 'dash/delete.html', context)
+        if source == 'change_status':
+            ticket = get_object_or_404(ShopHelpDesk, id=tkt_id)
+            ticket.status = status
+            ticket.is_sorted = is_sorted
+            ticket.admin = request.user
+            ticket.save()
+            messages.success(request, f"Ticket {ticket.help_id}: {status}")
+            return redirect('shop_helpdesk')
 
+    context = {'issues': pending_issues, 'sorted_issues': sorted_issues}
+    return render(request, 'dash/shop_helpdesk.html', context)
 
-def user_helpdesk_view(request):
-    issues = HelpDesk.objects.filter(username=request.user)
-    context = {'issues': issues}
-    return render(request, 'dash/helpdesk.html', context)
-
-
+@transaction.atomic
 def shop_profile_view(request):
-    shop = my_shop(request)
+    shop = get_user_shop(request)
+    if not shop:
+        return redirect('error_page')
+
+    staff_roles = Role.objects.filter(shop=shop)
+    units = Units.objects.filter(shop=shop)
+    pm_methods = PaymentMethod.objects.filter(shop=shop)
+    try:
+        threshold = get_object_or_404(LowStockThreshold, shop=shop)
+    except Exception:
+        threshold = None
 
     if request.method == 'POST':
-        name = request.POST.get('name')
-        bio = request.POST.get('bio')
+        name = request.POST.get('name', '').strip()
+        bio = request.POST.get('bio', '').strip()
+        location = request.POST.get('location', '').strip()
+        address = request.POST.get('address', '').strip()
+        email = request.POST.get('email', '').strip()
+        phone = request.POST.get('phone', '').strip()
+        insta = request.POST.get('instagram', '').strip()
+        twitter = request.POST.get('twitter', '').strip()
         avatar = request.FILES.get('avatar')
         image1 = request.FILES.get('image1')
         image2 = request.FILES.get('image2')
-        location = request.POST.get('location')
-        address = request.POST.get('address')
-        email = request.POST.get('email')
-        phone = request.POST.get('phone')
-        insta = request.POST.get('instagram')
-        twitter = request.POST.get('twitter')
-        title1 = request.POST.get('title1')
-        title2 = request.POST.get('title2')
-        source = request.POST.get('source')
+        title1 = request.POST.get('title1', '').strip()
+        title2 = request.POST.get('title2', '').strip()
+        role = request.POST.get('role_name', '').strip()
+        new_units = request.POST.get('units', '').strip()
+        ls_threshold = request.POST.get('ls_threshold', '').strip()
+        new_pm_method = request.POST.get('p_mthd')
+        source = request.POST.get('source', '').strip()
 
-        if source == 'update_profile':
-            shop.name = name
-            shop.bio = bio
-            shop.location = location
-            shop.address = address
-            shop.email = email
-            shop.phone = phone
-            shop.instagram = insta
-            shop.twitter = twitter
+        with transaction.atomic():
+            if source == 'update_profile':
+                shop.name = name
+                shop.bio = bio
+                shop.location = location
+                shop.address = address
+                shop.email = email
+                shop.phone = phone
+                shop.instagram = insta
+                shop.twitter = twitter
 
-            if avatar:
-                shop.avatar = avatar
+                if avatar:
+                    shop.avatar = avatar
+                if image1:
+                    shop.image1 = image1
+                if image2:
+                    shop.image2 = image2
 
-            if image1:
-                shop.image1 = image1
+                shop.save()
+                messages.success(request, 'Shop profile updated.')
 
-            if image2:
-                shop.image2 = image2
+            elif source == 'settings_form':
+                shop.title1 = title1
+                shop.title2 = title2
+                shop.save()
 
-            shop.save()
-            messages.success(request, 'Shop profile updated.')
-            return redirect('shop_profile')
+                if role:
+                    Role.objects.create(shop=shop, role_name=role)
+                    messages.success(request, f'Staff role "{role}" added.')
 
-        elif source == 'settings_form':
-            shop.title1 = title1
-            shop.title2 = title2
-            shop.save()
-            messages.success(request, 'Landing page titles updated.')
-            return redirect('shop_profile')
+                if new_units:
+                    Units.objects.create(shop=shop, units=new_units)
+                    messages.success(request, f'Product units "{new_units}" added.')
 
-    context = {'my_shop': shop}
+                if new_pm_method:
+                    PaymentMethod.objects.create(shop=shop, method=new_pm_method)
+                    messages.success(request, f'Payment method "{new_pm_method}" added.')
+
+                if ls_threshold:
+                    if threshold:
+                        threshold.threshold = ls_threshold
+                        threshold.save()
+                    else:
+                        LowStockThreshold.objects.create(shop=shop, threshold=ls_threshold)
+                        messages.success(request, f'Low stock threshold set at "{ls_threshold}".')
+
+                messages.success(request, "Settings updated.")
+
+        return redirect('shop_profile')
+
+    context = {
+        'my_shop': shop,
+        'staff_roles': staff_roles,
+        'units': units,
+        'threshold': threshold,
+        'p_methods': pm_methods or []
+    }
     return render(request, 'dash/shop_profile.html', context)
 
-
+@transaction.atomic
 def deals_and_promos_view(request):
-    shop = my_shop(request)
+    shop = get_user_shop(request)
+    if not shop:
+        return redirect('error_page')
+
+    products = Inventory.objects.filter(shop=shop)
+    coupons = Coupon.objects.filter(shop=shop)
+    categories = Category.objects.filter(shop=shop)
 
     if request.method == 'POST':
-        product = request.POST.get('product')
+        source = request.POST.get('source', '').strip()
+        product_id = request.POST.get('product')
+        category_name = request.POST.get('category')
         amount = request.POST.get('amount')
-        source = request.POST.get('source')
-        product_instance = get_object_or_404(Inventory, product_id=product)
+        coupon_id = request.POST.get('coupon_id')
+        duration = request.POST.get('duration')
+        deal_no = request.POST.get('deal_id')
 
-        if source == 'new_discount':
-            product_instance.discount = amount
-            product_instance.save()
-            messages.success(request, f'KSH. {amount} discount set for {product_instance.product}')
-            return redirect('deals_and_promos')
+        with transaction.atomic():
+            if source == 'new_discount':
+                product = get_object_or_404(Inventory, product_id=product_id)
+                product.discount = float(amount)
+                product.price -= product.discount
+                product.in_deals = True
+                product.in_discount = True
+                product.save()
+                messages.success(request, f"{product.product} discounted by {amount}.")
 
-        elif source == 'new_percent_off':
-            product_instance.discount = percent_off(product_instance.price, amount)
-            product_instance.save()
-            messages.success(request, f'{amount}% discount set for {product_instance.product}')
-            return redirect('deals_and_promos')
+            elif source == 'new_coupon':
+                Coupon.objects.create(shop=shop, percent_off=amount)
+                messages.success(request, "Coupon created.")
 
+            elif source == 'cancel_coupon':
+                coupon = get_object_or_404(Coupon, id=coupon_id)
+                coupon.status = 'inactive'
+                coupon.save()
+                messages.success(request, f"Coupon {coupon_id} canceled.")
 
-    all_products = Inventory.objects.filter(shop=shop, in_deals=False)
-    context = {'products': all_products}
+            elif source == 'cancel_all_coupons':
+                coupons.update(status='inactive')
+                messages.success(request, "All coupons canceled.")
+
+    context = {'products': products, 'coupons': coupons, 'categories': categories}
     return render(request, 'dash/deals_and_promos.html', context)
 
+@transaction.atomic
+def staff_view(request):
+    shop = get_user_shop(request)
+    if not shop:
+        return redirect('error_page')
 
+    staff = Profile.objects.filter(shop=shop, in_staff=True)
+    roles = Role.objects.filter(shop=shop)
 
+    if request.method == 'POST':
+        username = request.POST.get('username', '').strip()
+        email = request.POST.get('email', '').strip()
+        password1 = request.POST.get('password1')
+        password2 = request.POST.get('password2')
+        role_name = request.POST.get('role', '').strip()
+        source = request.POST.get('source', '').strip()
 
+        if source == 'new_staff' and password1 == password2:
+            with transaction.atomic():
+                user = User.objects.create_user(username=username, email=email, password=password1)
+                role = get_object_or_404(Role, shop=shop, role_name=role_name)
+                Profile.objects.create(shop=shop, user=user, in_staff=True, role=role)
+                messages.success(request, "New staff member created.")
+        else:
+            messages.error(request, "Password mismatch or invalid input.")
 
-
-
-
-
-
-
-
-
-
-
-
-
+    return render(request, 'dash/staff.html', {'staff': staff, 'roles': roles})
 

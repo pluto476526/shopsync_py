@@ -25,22 +25,34 @@ def home(request):
         category = request.POST.get('category')
         source = request.POST.get('source')
 
-        if source == 'new_shop':
-            category_instance = get_object_or_404(ShopCategory, category=category)
-            Shop.objects.create(
-                owner = owner,
-                name = name,
-                bio = bio,
-                shop_category = category_instance,
-            )
-            messages.success(request, f'{name} registered')
-            return redirect('home')
-    
+        if request.user.is_authenticated:
+            profile = get_object_or_404(Profile, user=request.user)
+            logger.debug(f'web prof: {profile}')
+
+            if source == 'new_shop':
+                category_instance = get_object_or_404(ShopCategory, category=category)
+                Shop.objects.create(
+                    owner = owner,
+                    name = name,
+                    bio = bio,
+                    shop_category = category_instance,
+                )
+                shop = get_object_or_404(Shop, owner=request.user)
+                profile.shop = shop
+                profile.save()
+                messages.success(request, f'{name} registered')
+                return redirect('home')
+
+        else:
+            profile = None
+
     shops = Shop.objects.all()
     shop_categories = ShopCategory.objects.all()
+
     context = {
         'available_shops': shops,
         'shop_categories': shop_categories,
+        'profile': profile,
     }
     return render(request, 'web/index.html', context)
 

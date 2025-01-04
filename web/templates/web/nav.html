@@ -16,9 +16,9 @@
         {% if request.user.is_authenticated %}
         <li><a href="{% url 'sign_out' %}">Sign Out</a></li>
         {% else %}
-        <li><a href="{% url 'sign_in' %}">Sign In</a></li>
-        {% endif %} {% if shop %}
-        <li><a class="getstarted" href="{% url 'dash' %}">{{ shop }}</a></li>
+        <li><a class="getstarted" href="{% url 'sign_in' %}">Sign In</a></li>
+        {% endif %} {% if profile.shop %}
+        <li><a class="getstarted" href="{% url 'dash' %}">{{ profile.shop }}</a></li>
         {% else %} {% if request.user.is_authenticated %}
         <li>
           <a
@@ -36,7 +36,7 @@
     <!-- .navbar -->
   </div>
   {% if messages %} {% for message in messages %}
-  <div class="alert alert-info alert-dismissible fade show" role="alert">
+  <div class="alert alert-info alert-dismissible fade show text-center" role="alert">
     {{ message }}
     <button
       type="button"

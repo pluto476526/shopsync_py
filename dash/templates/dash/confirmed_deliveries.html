@@ -5,41 +5,79 @@
   <div class="row">
     <div class="col-sm-12">
       <div class="home-tab">
-        <div class="d-sm-flex align-items-center justify-content-between border-bottom">
+        <div
+          class="d-sm-flex align-items-center justify-content-between border-bottom"
+        >
           <ul class="nav nav-tabs" role="tablist">
             <li class="nav-item">
-              <a class="nav-link active ps-0" id="home-tab" data-bs-toggle="tab" href="#confirmed_requests" role="tab"
-                aria-controls="confirmed_requests" aria-selected="true">Confirmed Requests</a>
+              <a
+                class="nav-link active ps-0"
+                id="home-tab"
+                data-bs-toggle="tab"
+                href="#confirmed_requests"
+                role="tab"
+                aria-controls="confirmed_requests"
+                aria-selected="true"
+                >Confirmed Requests</a
+              >
             </li>
             <li class="nav-item">
-              <a class="nav-link" id="profile-tab" data-bs-toggle="tab" href="#in_transit" role="tab"
-                aria-selected="false">Deliveries in Transit</a>
+              <a
+                class="nav-link"
+                id="profile-tab"
+                data-bs-toggle="tab"
+                href="#in_transit"
+                role="tab"
+                aria-selected="false"
+                >Deliveries in Transit</a
+              >
             </li>
             <li class="nav-item">
-              <a class="nav-link" id="contact-tab" data-bs-toggle="tab" href="#completed" role="tab"
-                aria-selected="false">Completed Delivery Requests</a>
+              <a
+                class="nav-link"
+                id="contact-tab"
+                data-bs-toggle="tab"
+                href="#completed"
+                role="tab"
+                aria-selected="false"
+                >Completed Delivery Requests</a
+              >
             </li>
           </ul>
         </div>
-        {% if messages %}
-        {% for message in messages %}
-        <div class="alert alert-info alert-dismissible fade show mt-2" role="alert">
+        {% if messages %} {% for message in messages %}
+        <div
+          class="alert alert-info alert-dismissible fade show mt-2"
+          role="alert"
+        >
           {{ message }}
-          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          <button
+            type="button"
+            class="btn-close"
+            data-bs-dismiss="alert"
+            aria-label="Close"
+          ></button>
         </div>
-        {% endfor %}
-        {% endif %}
+        {% endfor %} {% endif %}
         <div class="tab-content tab-content-basic">
-          <div class="tab-pane fade show active" id="confirmed_requests" role="tabpanel"
-            aria-labelledby="confirmed_requests">
+          <div
+            class="tab-pane fade show active"
+            id="confirmed_requests"
+            role="tabpanel"
+            aria-labelledby="confirmed_requests"
+          >
             <div class="col-sm-12 grid-margin stretch-card">
               <div class="card">
                 <div class="card-body">
-                  <div class="d-sm-flex justify-content-between align-items-start">
+                  <div
+                    class="d-sm-flex justify-content-between align-items-start"
+                  >
                     <div>
                       <h4 class="card-title">Confirmed Requests</h4>
                       <p class="card-description">
-                        View and manage checked out carts and requests made from the dash.<br> Assign drivers or staff to make deliveries.
+                        View and manage checked out carts and requests made from
+                        the dash.<br />
+                        Assign drivers or staff to make deliveries.
                       </p>
                     </div>
                   </div>
@@ -61,18 +99,40 @@
                           <td>{{ product.item_count }}</td>
                           <td>KSH. {{ product.total_amount }}</td>
                           <!-- <td class="text-success"> 98.05% <i class="ti-arrow-up"></i></td> -->
-                          <td class="d-flex justify-content-start" style="gap: 3px;">
-                              <a href="{% url 'order_details' product.order_number %}"><span class="badge badge-info">View</span></a>
-                              <button class="badge badge-info" type="button" data-bs-toggle="modal"
-                              data-bs-target="#assMultModal{{ product.order_number }}">Confirm</button>
+                          <td
+                            class="d-flex justify-content-start"
+                            style="gap: 3px"
+                          >
+                            <a
+                              href="{% url 'order_details' product.order_number %}"
+                              ><span class="badge badge-info">View</span></a
+                            >
+                            <button
+                              class="badge badge-info"
+                              type="button"
+                              data-bs-toggle="modal"
+                              data-bs-target="#assMultModal{{ product.order_number }}"
+                            >
+                              Confirm
+                            </button>
                             <!-- View product Modal -->
-                            <div class="modal fade" id="assMultModal{{ product.order_number }}" tabindex="-1">
+                            <div
+                              class="modal fade"
+                              id="assMultModal{{ product.order_number }}"
+                              tabindex="-1"
+                            >
                               <div class="modal-dialog">
                                 <div class="modal-content">
                                   <div class="modal-header">
-                                    <h5 class="modal-title">Delivery Request Form</h5>
-                                    <button type="button" class="btn-close" data-bs-dismiss="modal"
-                                      aria-label="Close"></button>
+                                    <h5 class="modal-title">
+                                      Delivery Request Form
+                                    </h5>
+                                    <button
+                                      type="button"
+                                      class="btn-close"
+                                      data-bs-dismiss="modal"
+                                      aria-label="Close"
+                                    ></button>
                                   </div>
                                   <div class="modal-body">
                                     <!-- Floating Labels Form -->
@@ -80,22 +140,46 @@
                                       {% csrf_token %}
                                       <div class="col-md-12">
                                         <div class="form-floating">
-                                          <select name="driver" class="form-select">
-                                            <option value="" selected disabled>------------------------</option>
+                                          <select
+                                            name="driver"
+                                            class="form-select"
+                                          >
+                                            <option value="" selected disabled>
+                                              ------------------------
+                                            </option>
                                             {% for driver in my_drivers %}
-                                            <option value="{{ driver.name }}">{{ driver.name|title }}</option>
+                                            <option value="{{ driver.name }}">
+                                              {{ driver.name|title }}
+                                            </option>
                                             {% endfor %}
                                           </select>
                                           <label>Driver</label>
                                         </div>
                                       </div>
-                                      <input type="hidden" name="source" value="assign_multiple">
-                                      <input type="hidden" name="order_number" value="{{ product.order_number }}">
+                                      <input
+                                        type="hidden"
+                                        name="source"
+                                        value="assign_multiple"
+                                      />
+                                      <input
+                                        type="hidden"
+                                        name="order_number"
+                                        value="{{ product.order_number }}"
+                                      />
                                       <div class="modal-footer">
-                                        <button type="button" class="btn btn-sm btn-outline-danger"
-                                          data-bs-dismiss="modal">Close</button>
-                                        <button type="submit" class="btn btn-sm btn-outline-success">Assign
-                                          Driver</button>
+                                        <button
+                                          type="button"
+                                          class="btn btn-sm btn-outline-danger"
+                                          data-bs-dismiss="modal"
+                                        >
+                                          Close
+                                        </button>
+                                        <button
+                                          type="submit"
+                                          class="btn btn-sm btn-outline-success"
+                                        >
+                                          Assign Driver
+                                        </button>
                                       </div>
                                     </form>
                                     <!-- End floating Labels Form -->
@@ -116,15 +200,23 @@
               </div>
             </div>
           </div>
-          <div class="tab-pane fade active" id="in_transit" role="tabpanel" aria-labelledby="in_transit">
+          <div
+            class="tab-pane fade active"
+            id="in_transit"
+            role="tabpanel"
+            aria-labelledby="in_transit"
+          >
             <div class="col-sm-12 grid-margin stretch-card">
               <div class="card">
                 <div class="card-body">
-                  <div class="d-sm-flex justify-content-between align-items-start">
+                  <div
+                    class="d-sm-flex justify-content-between align-items-start"
+                  >
                     <div>
                       <h4 class="card-title">Deliveries in Transit</h4>
                       <p class="card-description">
-                        View and manage delivery requests that have been processed and are already in transit.
+                        View and manage delivery requests that have been
+                        processed and are already in transit.
                       </p>
                     </div>
                   </div>
@@ -146,13 +238,29 @@
                           <td>{{ product.item_count }}</td>
                           <td>KSH. {{ product.total_amount }}</td>
                           <!-- <td class="text-success"> 98.05% <i class="ti-arrow-up"></i></td> -->
-                          <td class="d-flex justify-content-start" style="gap: 3px;">
-                              <a href="{% url 'order_details' product.order_number %}"><span class="badge badge-info">View</span></a>
-                              <form action="" method="post">
-                                {% csrf_token %}
-                                <input type="hidden" name="order_number" value="{{ product.order_number }}">
-                                <input type="hidden" name="source" value="complete_multiple">
-                              <button class="badge badge-info" type="submit">Complete</button>
+                          <td
+                            class="d-flex justify-content-start"
+                            style="gap: 3px"
+                          >
+                            <a
+                              href="{% url 'order_details' product.order_number %}"
+                              ><span class="badge badge-info">View</span></a
+                            >
+                            <form action="" method="post">
+                              {% csrf_token %}
+                              <input
+                                type="hidden"
+                                name="order_number"
+                                value="{{ product.order_number }}"
+                              />
+                              <input
+                                type="hidden"
+                                name="source"
+                                value="complete_multiple"
+                              />
+                              <button class="badge badge-info" type="submit">
+                                Complete
+                              </button>
                             </form>
                             <button class="badge badge-danger">Delete</button>
                           </td>
@@ -166,11 +274,18 @@
               </div>
             </div>
           </div>
-          <div class="tab-pane fade active" id="completed" role="tabpanel" aria-labelledby="completed">
+          <div
+            class="tab-pane fade active"
+            id="completed"
+            role="tabpanel"
+            aria-labelledby="completed"
+          >
             <div class="col-sm-12 grid-margin stretch-card">
               <div class="card">
                 <div class="card-body">
-                  <div class="d-sm-flex justify-content-between align-items-start">
+                  <div
+                    class="d-sm-flex justify-content-between align-items-start"
+                  >
                     <div>
                       <h4 class="card-title">Completed Deliveries Requests</h4>
                       <p class="card-description">
@@ -197,7 +312,10 @@
                           <td>KSH. {{ product.total_amount }}</td>
                           <!-- <td class="text-success"> 98.05% <i class="ti-arrow-up"></i></td> -->
                           <td>
-                              <a href="{% url 'order_details' product.order_number %}"><span class="badge badge-info">View</span></a>
+                            <a
+                              href="{% url 'order_details' product.order_number %}"
+                              ><span class="badge badge-info">View</span></a
+                            >
                           </td>
                         </tr>
                         {% endfor %}

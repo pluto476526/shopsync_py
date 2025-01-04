@@ -4,7 +4,7 @@
 <!-- ======= Header ======= -->
 <header id="header" class="fixed-top d-grid align-items-center">
   <div class="container d-flex align-items-center justify-content-between">
-    <h1 class="logo"><a href="{% url 'home' %}">ShopSync</a></h1>
+    <h1 class="logo d-none d-lg-block"><a href="{% url 'home' %}">ShopSync</a></h1>
     <nav id="navbar" class="navbar">
       <div class="col-md-6 form-group w-100">
         <form action="">
@@ -41,7 +41,7 @@
   <section class="inner-page">
     <div class="container">
       <div class="row">
-        <div class="col-md-12 py-5">
+        <div class="col-md-12 mb-3">
           <p>Here is a list of all shops. Get started! You can also search by shopname.</p>
         </div>
       </div>
@@ -74,7 +74,7 @@
                 <p class="card-text">{{ shops.bio|truncatechars:200|capfirst }}</p>
                 <!-- Spacer to push the button down -->
                 <div class="mt-auto">
-                  <a href="{% url 'shop_details' shops.name %}" class="btn btn-primary btn-rounded btn-sm">Read More</a>
+                  <a href="{% url 'shop_details' shops.name %}" class="btn btn-success btn-rounded btn-sm">Read More</a>
                 </div>
               </div>
             </div>

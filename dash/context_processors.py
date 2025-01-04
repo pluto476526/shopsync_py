@@ -1,34 +1,68 @@
-# views/context_processors.py
+# dash/context_processors.py
 
-from django.shortcuts import get_object_or_404
 from django.contrib import messages
 from django.db.models import Q
-from dash.models import Delivery
+from dash.models import Delivery, Profile
 from shop.models import Shop
 import logging
 
 logger = logging.getLogger(__name__)
 
-def get_user_shop(request):
-    return get_object_or_404(Shop, owner=request.user)
+
+def my_shop(request):
+    """
+    Retrieve the shop associated with the authenticated user's profile.
+    Returns None if no shop is found.
+    """
+    if not request.user.is_authenticated:
+        return None
+
+    try:
+        profile = Profile.objects.get(user=request.user)
+        if profile and profile.shop:
+            return profile.shop
+        return None
+
+    except Exception as e:
+        logger.error(f"Error retrieving shop for user {request.user}: {e}")
+        return None
+
+
+def the_shop(request):
+    """
+    Add the current user's shop to the context if authenticated.
+    """
+    shop = my_shop(request)
+    if shop:
+        return {'the_shop': shop}
+    return {}
+
 
 def get_order(request):
     """
-    Context processor to fetch and filter orders based on a query parameter.
+    Add tracked orders to the context based on a query parameter.
     """
-    if request.user.is_authenticated:
-        query = request.GET.get('q')
-        orders = []
+    if not request.user.is_authenticated:
+        return {}
 
-        if query:
-            orders = Delivery.objects.filter(shop=get_user_shop(request))
-            orders = orders.filter(Q(order_number__icontains=query))
+    query = request.GET.get('q', '').strip()
+    if not query:
+        return {}
 
-            if not orders.exists():
-                orders = []
-                messages.error(request, f'Order number "{query}" not found.')
+    try:
+        shop = my_shop(request)
+        if not shop:
+            logger.warning("Shop is not available for the user.")
+            return {}
 
-        context = {'tracked_order': orders}
-        return context
+        # Filter orders by shop and query
+        orders = Delivery.objects.filter(shop=shop, order_number__icontains=query)
+        if not orders.exists():
+            messages.error(request, f'Order number "{query}" not found.')
+            return {'tracked_order': []}
 
-    return {}
+        return {'tracked_order': orders}
+    except Exception as e:
+        logger.error(f"Error retrieving orders for query '{query}': {e}")
+        return {}
+

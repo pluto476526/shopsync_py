@@ -7,9 +7,9 @@
         </a>
       </li>
       <li class="nav-item">
-        <a class="nav-link" href="{% url 'shop' shop.name %}">
+        <a class="nav-link" href="{% url 'shop' the_shop.name %}">
           <i class="mdi mdi-grid-large menu-icon"></i>
-          <span class="menu-title">{{ shop|title }}</span>
+          <span class="menu-title">{{ the_shop.name|upper }}</span>
         </a>
       </li>
       <li class="nav-item nav-category">Admin</li>
@@ -22,16 +22,16 @@
         </a>
         <div class="collapse" id="ui-basic">
           <ul class="nav flex-column sub-menu">
-            <li class="nav-item"> <a class="nav-link" href="">All Shops</a></li>
-            <li class="nav-item"> <a class="nav-link" href="">Pending Applications</a></li>
+            <li class="nav-item"> <a class="nav-link" href="{% url 'main_all_shops' %}">All Shops</a></li>
+            <li class="nav-item"> <a class="nav-link" href="{% url 'pending_applications' %}">Pending Applications</a></li>
             <li class="nav-item"> <a class="nav-link" href="">Removed Shops</a></li>
           </ul>
         </div>
       </li>
       <li class="nav-item">
-        <a class="nav-link" href="">
+        <a class="nav-link" href="{% url 'main_helpdesk' %}">
           <i class="menu-icon mdi mdi-file-document"></i>
-          <span class="menu-title">Help Desk</span>
+          <span class="menu-title">Main Help Desk</span>
         </a>
       </li>
       <li class="nav-item nav-category">My Shop</li>
@@ -82,6 +82,12 @@
         </div>
       </li>
       <li class="nav-item">
+        <a class="nav-link" href="{% url 'shop_helpdesk' %}">
+          <i class="menu-icon mdi mdi-file-document"></i>
+          <span class="menu-title">Help Desk</span>
+        </a>
+      </li>
+      <li class="nav-item">
         <a class="nav-link" data-bs-toggle="collapse" href="#transactions" aria-expanded="false"
           aria-controls="transactions">
           <i class="menu-icon mdi mdi-layers-outline"></i>
@@ -125,22 +131,14 @@
         </div>
       </li>
       <li class="nav-item">
-        <a class="nav-link" data-bs-toggle="collapse" href="#users" aria-expanded="false" aria-controls="users">
+        <a class="nav-link" href="{% url 'dash_staff' %}">
           <i class="menu-icon mdi mdi-layers-outline"></i>
-          <span class="menu-title">Manage Users</span>
-          <i class="menu-arrow"></i>
+          <span class="menu-title">Staff</span>
         </a>
-        <div class="collapse" id="users">
-          <ul class="nav flex-column sub-menu">
-            <li class="nav-item"> <a class="nav-link" href="">Superusers</a></li>
-            <li class="nav-item"> <a class="nav-link" href="">Staff</a></li>
-            <li class="nav-item"> <a class="nav-link" href="">Blacklist</a></li>
-          </ul>
-        </div>
       </li>
       <li class="nav-item nav-category">Help</li>
       <li class="nav-item">
-        <a class="nav-link" href="{% url 'helpdesk' %}">
+        <a class="nav-link" href="{% url 'main_helpdesk_user' %}">
           <i class="menu-icon mdi mdi-file-document"></i>
           <span class="menu-title">Raise Ticket</span>
         </a>
