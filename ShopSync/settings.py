@@ -27,7 +27,7 @@ SECRET_KEY = 'django-insecure-c-q!glgxx394oc*)6wyug1&rzckhvwi$vmum6s9qnx)gwbjq$$
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-ALLOWED_HOSTS = ['shopsync-0blf.onrender.com']
+ALLOWED_HOSTS = ['shopsync-0blf.onrender.com',]
 
 
 # Application definition
