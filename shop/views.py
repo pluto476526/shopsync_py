@@ -106,8 +106,11 @@ def index(request, name):
             for p in products:
                 tc_products.append(p)
 
-        # Get the most recent timed deal
-        deal = TodaysDeal.objects.filter(shop=shop).order_by('-time').first()
+        # Get the 2 most recent deals of the day
+        deals = TodaysDeal.objects.filter(shop=shop).order_by('-time')[:2]
+        logger.debug(deals)
+        for d in deals:
+            logger.debug(d.time)
 
         # Prepare context for rendering
         context = {
@@ -115,10 +118,10 @@ def index(request, name):
             'top_categories': top_categories,
             'f_categories': f_categories,
             'tc_products': tc_products,
-            'deal': deal,
+            'deals': deals,
             'shop': shop,
         }
-        return render(request, 'shop/index22.html', context)
+        return render(request, 'shop/index.html', context)
     
     except Exception as e:
         # Log the error and show a friendly error page

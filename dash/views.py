@@ -6,7 +6,7 @@ from django.views.decorators.http import require_http_methods
 from django.db import transaction, models
 from shop.models import Shop, ShopHelpDesk
 from main.models import MainHelpDesk
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 import logging
 from dash.models import (
     Category,
@@ -19,6 +19,7 @@ from dash.models import (
     Role,
     Units,
     LowStockThreshold,
+    TodaysDeal,
 )
 
 # Logger setup
@@ -489,8 +490,8 @@ def physical_sales_view(request):
                     sale_category.save()
                     shop.total_sales += totals
                     shop.save()
-                    logger.debug(shop.total_sales)
                     messages.success(request, f"Order {order_no} created. Please confirm payment.")
+                    return redirect('physical_sales')
                 elif source == 'confirm_payment':
                     Delivery.objects.filter(shop=shop, order_number=order_no).update(
                         status='completed',
@@ -498,6 +499,7 @@ def physical_sales_view(request):
                         admin=request.user
                     )
                     messages.success(request, f"Order {order_no} payment confirmed.")
+                    return redirect('physical_sales')
 
         context = {
             'available_products': Inventory.objects.filter(shop=shop, status='available'),
@@ -668,51 +670,215 @@ def shop_profile_view(request):
     }
     return render(request, 'dash/shop_profile.html', context)
 
-@transaction.atomic
+
 def deals_and_promos_view(request):
     shop = get_user_shop(request)
-    if not shop:
-        return redirect('error_page')
-
-    products = Inventory.objects.filter(shop=shop)
+    all_products = Inventory.objects.filter(shop=shop)
     coupons = Coupon.objects.filter(shop=shop)
-    categories = Category.objects.filter(shop=shop)
+    all_categories = Category.objects.filter(shop=shop)
 
     if request.method == 'POST':
-        source = request.POST.get('source', '').strip()
-        product_id = request.POST.get('product')
-        category_name = request.POST.get('category')
+        product = request.POST.get('product')
         amount = request.POST.get('amount')
+        source = request.POST.get('source')
+        category_name = request.POST.get('category')
         coupon_id = request.POST.get('coupon_id')
         duration = request.POST.get('duration')
         deal_no = request.POST.get('deal_id')
 
-        with transaction.atomic():
-            if source == 'new_discount':
-                product = get_object_or_404(Inventory, product_id=product_id)
-                product.discount = float(amount)
-                product.price -= product.discount
+        if product:
+            product_instance = get_object_or_404(Inventory, product_id=product)
+
+        if category_name:
+            category_instance = get_object_or_404(Category, shop=shop, category=category_name)
+
+        if source == 'new_discount':
+            product_instance.discount = amount
+            product_instance.in_deals = True
+            product_instance.in_discount = True
+            product_instance.price = float(product_instance.price) - float(amount)
+            product_instance.save()
+            messages.success(request, f'KSH. {amount} discount set for {product_instance.product}. Please confirm price.')
+            return redirect('deals_and_promos')
+
+        elif source == 'new_percent_off':
+            product_instance.discount = percent_off(product_instance.price, amount)
+            product_instance.in_deals = True
+            product_instance.in_sale = True
+            product_instance.percent_off = amount
+            product_instance.price = float(product_instance.price) - float(product_instance.discount)
+            product_instance.save()
+            messages.success(request, f'{amount}% discount set for {product_instance.product}. Please confirm current price.')
+            return redirect('deals_and_promos')
+
+        elif source == 'new_category_sale':
+            category_products = all_products.filter(category=category_instance)
+
+            for product in category_products:
+                product.discount = percent_off(product.price, int(amount))
                 product.in_deals = True
-                product.in_discount = True
-                product.save()
-                messages.success(request, f"{product.product} discounted by {amount}.")
+                product.percent_off = amount
+                product.price = float(product.price) - float(product.discount)
 
-            elif source == 'new_coupon':
-                Coupon.objects.create(shop=shop, percent_off=amount)
-                messages.success(request, "Coupon created.")
+            Inventory.objects.bulk_update(category_products, ['discount', 'in_deals', 'percent_off', 'price'])
+            category_instance.in_sale = True
+            category_instance.percent_off = amount
+            category_instance.save()
+            messages.success(request, f'{amount}% discount set for all products in {category_name}. Please confirm current prices.')
+            return redirect('deals_and_promos')
 
-            elif source == 'cancel_coupon':
-                coupon = get_object_or_404(Coupon, id=coupon_id)
+        elif source == 'new_coupon':
+            Coupon.objects.create(
+                shop = shop,
+                percent_off = amount,
+            )
+            messages.success(request, f'Coupon for {amount}% off on all shopping generated.')
+            return redirect('deals_and_promos')
+
+        elif source == 'new_todays_deal':
+            product_instance.price = float(product_instance.price) - float(amount)
+            product_instance.in_deals = True
+            product_instance.discount = amount
+            product_instance.save()
+
+            new = TodaysDeal.objects.create(
+                shop = shop,
+                product_id = product_instance.product_id,
+                product = product_instance.product,
+                avatar = product_instance.avatar,
+                discount = amount,
+                time = datetime.now(timezone(timedelta(hours=3))) + timedelta(hours=int(duration)+3)
+            )
+            logger.debug(f'time: {new.time}')
+            logger.debug(f'delta: {timedelta(hours=int(duration))}')
+            logger.debug(f'now: {datetime.now(timezone(timedelta(hours=3)))}')
+            messages.success(request, f'{product_instance.product} saved as deal of the day')
+            return redirect('deals_and_promos')
+
+        elif source == 'cancel_discount':
+            product_instance.in_deals = False
+            product_instance.in_sale = False
+            product_instance.in_discount = False
+            product_instance.price += product_instance.discount
+            product_instance.percent_off = 0
+            product_instance.discount = 0
+            product_instance.save()
+            messages.success(request, f'Discount for {product_instance.product} cancelled. Please confirm current prices.')
+            return redirect('deals_and_promos')
+
+        elif source == 'cancel_all_discounts':
+            products = all_products.filter(in_discount=True)
+
+            for p in products:
+                p.in_deals = False
+                p.in_discount = False
+                p.price += p.discount
+                p.discount = 0
+
+            Inventory.objects.bulk_update(products, ['in_deals', 'in_discount', 'discount', 'price'])
+            messages.success(request, 'All discounts cancelled. Please confirm current prices.')
+            return redirect('deals_and_promos')
+
+        elif source == 'cancel_all_sales':
+            products = all_products.filter(in_sale=True)
+
+            for p in products:
+                p.in_deals = False
+                p.in_sale = False
+                p.price += p.discount
+                p.discount = 0
+                p.percent_off = 0
+
+            Inventory.objects.bulk_update(products, ['in_deals', 'in_sale', 'discount', 'percent_off', 'price'])
+            messages.success(request, 'All discounts cancelled. Please confirm current prices.')
+            return redirect('deals_and_promos')
+
+        elif source == 'cancel_category_sale':
+            products = all_products.filter(category=category_instance)
+
+            for p in products:
+                p.in_deals = False
+                p.in_sale = False
+                p.price += p.discount
+                p.discount = 0
+                p.percent_off = 0
+
+            Inventory.objects.bulk_update(products, ['in_deals', 'in_sale', 'discount', 'percent_off', 'price'])
+            category_instance.in_sale = False
+            category_instance.percent_off = 0
+            category_instance.save()
+            messages.success(request, f'Sale for {category_instance.category} cancelled. Please confirm current prices.')
+            return redirect('deals_and_promos')
+
+        elif source == 'cancel_all_category_sales':
+            categories = all_categories.filter(in_sale=True)
+
+            for c in categories:
+                products = all_products.filter(category=c)
+
+                for p in products:
+                    p.in_deals = False
+                    p.in_sale = False
+                    p.price += p.discount
+                    p.discount = 0
+                    p.percent_off = 0
+
+                Inventory.objects.bulk_update(products, ['in_deals', 'in_sale', 'discount', 'percent_off', 'price'])
+                c.in_sale = False
+                c.percent_off = 0
+                c.save()
+
+            messages.success(request, 'All category sales cancelled. Please confirm prices.')
+            return redirect('deals_and_promos')
+
+
+        elif source == 'cancel_coupon':
+            coupon = get_object_or_404(Coupon, coupon_id=coupon_id)
+            coupon.status = 'inactive'
+            coupon.save()
+            messages.success(request, f'Coupon #{coupon_id} deactivated.')
+            return redirect('deals_and_promos')
+
+        elif source == 'cancel_all_coupons':
+            for coupon in coupons:
                 coupon.status = 'inactive'
-                coupon.save()
-                messages.success(request, f"Coupon {coupon_id} canceled.")
 
-            elif source == 'cancel_all_coupons':
-                coupons.update(status='inactive')
-                messages.success(request, "All coupons canceled.")
+            Coupon.objects.bulk_update(coupons, ['status'])
+            messages.success(request, 'All coupons deactivated.')
+            return redirect('deals_and_promos')
 
-    context = {'products': products, 'coupons': coupons, 'categories': categories}
+        elif source == 'deactivate_todays_deal':
+            deal = get_object_or_404(TodaysDeal, id=deal_no)
+            deal.status = 'inactive'
+            deal.save()
+
+            product = get_object_or_404(Inventory, product_id=deal.product_id)
+            product.price += deal.discount
+            product.discount = 0
+            product.in_deals = False
+            product.save()
+
+            messages.success(request, f'Deal for {product.product} deactivated. Please confirm current price.')
+            return redirect('deals_and_promos')
+
+    todays_deals = TodaysDeal.objects.filter(shop=shop)
+    categories_no_sale = all_categories.filter(in_sale=False)
+    available_products = all_products.filter(in_deals=False)
+    in_discounts = all_products.filter(in_discount=True)
+    in_sales = all_products.filter(in_sale=True)
+    category_sales = all_categories.filter(in_sale=True)
+    context = {
+        'all_products': all_products,
+        'products': available_products,
+        'categories': categories_no_sale,
+        'in_discounts': in_discounts,
+        'in_sales': in_sales,
+        'category_sales': category_sales,
+        'coupons': coupons,
+        'todays_deals':todays_deals,
+    }
     return render(request, 'dash/deals_and_promos.html', context)
+
 
 @transaction.atomic
 def staff_view(request):
@@ -737,8 +903,10 @@ def staff_view(request):
                 role = get_object_or_404(Role, shop=shop, role_name=role_name)
                 Profile.objects.create(shop=shop, user=user, in_staff=True, role=role)
                 messages.success(request, "New staff member created.")
+                return redirect('dash_staff')
         else:
             messages.error(request, "Password mismatch or invalid input.")
-
-    return render(request, 'dash/staff.html', {'staff': staff, 'roles': roles})
+    
+    context = {'staff': staff, 'roles': roles}
+    return render(request, 'dash/staff.html', context)
 

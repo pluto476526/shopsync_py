@@ -35,7 +35,7 @@
                                     <td>{{ product.category.category|capfirst }}</td>
                                     <td>KSH. {{ product.price|intcomma }} per {{ product.units.units }}</td>
                                     <td>{{ product.quantity|intcomma }} {{ product.units.units }}</td>
-                                    <td>KSH. {{ product.total }}</td>
+                                    <td>KSH. {{ product.total|intcomma }}</td>
                                     <td class="d-flex justify-content-start">
                                         <button class="badge badge-info" type="button" data-bs-toggle="modal"
                                             data-bs-target="#viewOrderModal{{ product.id }}">View</button>
@@ -114,14 +114,14 @@
                                                             <div class="col-md-12">
                                                                 <div class="form-floating">
                                                                     <input type="text" class="form-control"
-                                                                        value="{{ product.product.product }}" readonly>
+                                                                        value="{{ product.product.product|title }}" readonly>
                                                                     <label>Product</label>
                                                                 </div>
                                                             </div>
                                                             <div class="col-md-12">
                                                                 <div class="form-floating">
                                                                     <input type="text" class="form-control"
-                                                                        value="{{ product.category.category }}"
+                                                                        value="{{ product.category.category|title }}"
                                                                         readonly>
                                                                     <label>Category</label>
                                                                 </div>
@@ -129,28 +129,28 @@
                                                             <div class="col-md-6">
                                                                 <div class="form-floating">
                                                                     <input type="number" class="form-control"
-                                                                        value="{{ product.quantity }}" readonly>
+                                                                        value="{{ product.quantity|intcomma }}" readonly>
                                                                     <label>Quantity</label>
                                                                 </div>
                                                             </div>
                                                             <div class="col-md-6">
                                                                 <div class="form-floating">
                                                                     <input class="form-control"
-                                                                        value="{{ product.units.units }}" readonly>
+                                                                        value="{{ product.units.units|title }}" readonly>
                                                                     <label>Units</label>
                                                                 </div>
                                                             </div>
                                                             <div class="col-md-6">
                                                                 <div class="form-floating">
                                                                     <input class="form-control"
-                                                                        value="KSH. {{ product.price }}" readonly>
+                                                                        value="KSH. {{ product.price|intcomma }}" readonly>
                                                                     <label>Price Per Unit</label>
                                                                 </div>
                                                             </div>
                                                             <div class="col-md-6">
                                                                 <div class="form-floating">
                                                                     <input class="form-control"
-                                                                        value="KSH. {{ product.total }}" readonly>
+                                                                        value="KSH. {{ product.total|intcomma }}" readonly>
                                                                     <label>Total Bill</label>
                                                                 </div>
                                                             </div>

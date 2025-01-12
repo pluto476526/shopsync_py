@@ -1,4 +1,4 @@
-{% extends 'dash/main.html' %} {% load static %} {% block main %}
+{% extends 'dash/main.html' %} {% load static %} {% load humanize %} {% block main %}
 <div class="content-wrapper">
   <div class="row">
     {% if messages %} {% for message in messages %}
@@ -50,7 +50,7 @@
                 <tr>
                   <td>{{ product.order_number }}</td>
                   <td>{{ product.item_count }}</td>
-                  <td>KSH. {{ product.total_amount }}</td>
+                  <td>KSH. {{ product.total_amount|title }}</td>
                   <!-- <td class="text-success"> 98.05% <i class="ti-arrow-up"></i></td> -->
                   <td class="d-flex justify-content-start" style="gap: 3px">
                     <a href="{% url 'order_details' product.order_number %}">
@@ -111,7 +111,7 @@
                 <tr>
                   <td>{{ product.order_number }}</td>
                   <td>{{ product.item_count }}</td>
-                  <td>KSH. {{ product.total_amount }}</td>
+                  <td>KSH. {{ product.total_amount|intcomma }}</td>
                   <!-- <td class="text-success"> 98.05% <i class="ti-arrow-up"></i></td> -->
                   <td class="d-flex justify-content-start" style="gap: 3px">
                     <a href="{% url 'order_details' product.order_number %}">

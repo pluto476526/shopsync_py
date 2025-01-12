@@ -43,10 +43,9 @@
                             <tbody>
                                 {% for s in staff %}
                                 <tr>
-                                    <td>{{ s.name|title }}</td>
-                                    <td>{{ s.description|capfirst|truncatechars:20 }}</td>
+                                    <td>{{ s.user|title }}</td>
+                                    <td>{{ s.role.role_name|title }}</td>
                                     <td>{{ s.timestamp }}</td>
-                                    <td>{{ s.is_featured }}</td>
                                     <!-- <td class="text-success"> 98.05% <i class="ti-arrow-up"></i></td> -->
                                     <td class="d-flex justify-content-start" style="gap: 3px;">
                                         <button class="badge badge-info" type="button" data-bs-toggle="modal"
