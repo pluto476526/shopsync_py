@@ -6,6 +6,7 @@ import string
 class Role(models.Model):
     shop = models.ForeignKey('shop.Shop', on_delete=models.CASCADE)
     role_name = models.CharField(max_length=20)
+    is_deleted = models.BooleanField(default=False)
 
     def __str__(self):
         return f'{self.shop}: {self.role_name}'
@@ -20,6 +21,7 @@ class Profile(models.Model):
     role = models.ForeignKey(Role, on_delete=models.SET_NULL, blank=True, null=True)
     timestamp = models.DateTimeField(auto_now_add=True)
     phone = models.CharField(max_length=20, blank=True, null=True)
+    is_deleted = models.BooleanField(default=False)
 
     def __str__(self):
         return f"{self.user.username}'s profile"
@@ -33,6 +35,7 @@ class Profile(models.Model):
 class Supplier(models.Model):
     shop = models.ForeignKey('shop.Shop', on_delete=models.CASCADE)
     name = models.CharField(max_length=50)
+    is_deleted = models.BooleanField(default=False)
 
     def __str__(self):
         return f'{self.shop}: {self.name}'
@@ -48,6 +51,7 @@ class Category(models.Model):
     percent_off = models.PositiveIntegerField(default=0)
     timestamp = models.DateTimeField(auto_now_add=True)
     total_sales = models.PositiveIntegerField(default=0)
+    is_deleted = models.BooleanField(default=False)
 
     def __str__(self):
         return f'{self.shop}: {self.category}'
@@ -56,6 +60,7 @@ class Category(models.Model):
 class Units(models.Model):
     shop = models.ForeignKey('shop.Shop', on_delete=models.CASCADE)
     units = models.CharField(max_length=20)
+    is_deleted = models.BooleanField(default=False)
 
     def __str__(self):
         return f'{self.shop}: {self.units}'
@@ -64,6 +69,7 @@ class Units(models.Model):
 class LowStockThreshold(models.Model):
     shop = models.ForeignKey('shop.Shop', on_delete=models.CASCADE)
     threshold = models.PositiveIntegerField(default=0)
+    is_deleted = models.BooleanField(default=False)
 
     def __str__(self):
         return f'{self.shop}: {self.threshold}'
@@ -94,6 +100,7 @@ class Inventory(models.Model):
     order_instructions = models.TextField(blank=True, null=True)
     total_sales = models.PositiveIntegerField(default=0)
     in_orders = models.BooleanField(default=False)
+    is_deleted = models.BooleanField(default=False)
 
     def __str__(self):
         return f'{self.shop}: {self.product}'
@@ -111,6 +118,7 @@ class Review(models.Model):
     body = models.TextField(blank=True, null=True)
     rating = models.PositiveIntegerField(default=0)
     timestamp = models.DateTimeField(auto_now_add=True)
+    is_deleted = models.BooleanField(default=False)
 
     def __str__(self):
         return f'{self.productID}: {self.comment}'
@@ -119,6 +127,7 @@ class Review(models.Model):
 class PaymentMethod(models.Model):
     shop = models.ForeignKey('shop.Shop', on_delete=models.CASCADE)
     method = models.CharField(max_length=20)
+    is_deleted = models.BooleanField(default=False)
     
     def __str__(self):
         return f'{self.shop}: {self.method}'
@@ -153,6 +162,7 @@ class Delivery(models.Model):
     payment_method = models.ForeignKey('dash.PaymentMethod', on_delete=models.SET_NULL, blank=True, null=True)
     instructions = models.TextField(blank=True, null=True)
     source = models.CharField(max_length=10, default='dash')
+    is_deleted = models.BooleanField(default=False)
 
     def __str__(self):
         return f'{self.shop}: {self.order_number}'
@@ -170,6 +180,7 @@ class Coupon(models.Model):
     status = models.CharField(max_length=10, default='active')
     timestamp = models.DateTimeField(auto_now_add=True)
     total_sales = models.PositiveIntegerField(default=0)
+    is_deleted = models.BooleanField(default=False)
 
     def __str__(self):
         return f'{self.shop}: {self.issue}'
@@ -185,11 +196,14 @@ class TodaysDeal(models.Model):
     product_id = models.CharField(max_length=10)
     product = models.CharField(max_length=50, null=True)
     avatar = models.ImageField(default='dp1.jpg')
+    category = models.CharField(max_length=20, null=True)
+    price = models.PositiveIntegerField(default=0)
     discount = models.PositiveIntegerField(default=0)
     time = models.DateTimeField(null=True)
     status = models.CharField(max_length=10, default='active')
     timestamp = models.DateTimeField(auto_now_add=True)
     total_sales = models.PositiveIntegerField(default=0)
+    is_deleted = models.BooleanField(default=False)
 
     def __str__(self):
         return f'{self.shop}: {self.product_id}'

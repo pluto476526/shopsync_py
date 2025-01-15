@@ -6,7 +6,7 @@ from django.db.models import Sum, Count, F
 from django.contrib.auth.decorators import login_required
 from shop.models import Shop, Cart, ShopHelpDesk
 from dash.models import Inventory, Category, PaymentMethod, Delivery, TodaysDeal, Profile
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 import logging
 import secrets
 import string
@@ -90,8 +90,8 @@ def index(request, name):
 
         # Fetch categories
         categories = Category.objects.filter(shop=shop)
-        top_categories = categories.order_by('-total_sales')[:4]
-        f_categories = categories.filter(is_featured=True).order_by('-timestamp')[:3]
+        top_categories = categories.order_by('total_sales')[:4]
+        f_categories = categories.filter(is_featured=True).order_by('timestamp')[:3]
 
         # Fetch products from top categories(tc) excluding those in the user's pending cart
         cart_products = Cart.objects.filter(
@@ -106,21 +106,33 @@ def index(request, name):
             for p in products:
                 tc_products.append(p)
 
-        # Get the 2 most recent deals of the day
-        deals = TodaysDeal.objects.filter(shop=shop).order_by('-time')[:2]
-        logger.debug(deals)
+        # Fetch the 2 most recent deals of the day
+        deals = TodaysDeal.objects.filter(shop=shop).order_by('time')[:2]
+        active_deals = []
         for d in deals:
-            logger.debug(d.time)
+            logger.debug(f'dl: {d}')
+            if d.time > datetime.now(timezone(timedelta(hours=3))):
+                active_deals.append(d)
+
+        # Fetch latest arrivals
+        products = Inventory.objects.filter(shop=shop)
+        arrivals = products.order_by('timestamp')[:4]
+
+        # Fetch 4 featured products
+        f_products = products.filter(is_featured=True).order_by('timestamp')[:4]
 
         # Prepare context for rendering
         context = {
             'profile': profile,
             'top_categories': top_categories,
             'f_categories': f_categories,
+            'f_products': f_products,
             'tc_products': tc_products,
-            'deals': deals,
+            'deals': active_deals,
+            'new_arrivals': arrivals,
             'shop': shop,
         }
+        logger.debug(f'deals: {deals}')
         return render(request, 'shop/index.html', context)
     
     except Exception as e:
@@ -133,16 +145,58 @@ def index(request, name):
 # View: Products list
 @login_required
 def products_view(request, name):
+    sort_by = request.GET.get('sort_by', 'newest')
+    show_count = int(request.GET.get('show', 12))
+    min_price = request.GET.get('min_price')
+    max_price = request.GET.get('max_price')
     the_shop = get_shop(name)
-    products = Inventory.objects.filter(shop=the_shop, status='available').exclude(
+    products = Inventory.objects.filter(is_deleted=False, status='available', shop=the_shop).exclude(
         product_id__in=Cart.objects.filter(shop=the_shop, customer=request.user, status='pending').values_list('cart_product_id', flat=True)
     )
-    categories = Category.objects.filter(shop=the_shop)
+    categories = Category.objects.filter(is_deleted=False, shop=the_shop).annotate(
+        product_count=Count('inventory')
+    )
+    grouped_products = [
+        {
+            'category': c,
+            'c_products': products.filter(category=c),
+            'count': c.product_count,
+        }
+        for c in categories
+    ]
+    # for c in categories:
+    #     c_products = products.filter(category=c)
+    #     grouped_products.append({
+    #         'category': c,
+    #         'c_products': c_products,
+    #     })
+    
+    if min_price:
+        products = products.filter(price__gte=min_price)
+    if max_price:
+        products = products.filter(price__lte=max_price)
 
+    match sort_by:
+        case 'newest':
+            products = products.order_by('-timestamp')
+        case 'best_sellers':
+            products = products.order_by('-total_sales')
+        case 'top_rated':
+            products = products.order_by('-rating')
+        case 'lowest_price':
+            products = products.order_by('price')
+        case 'highest_price':
+            products = products.order_by('-price')
+        case _:
+            products = products.order_by('-timestamp')
+
+    products = products[:show_count] # Limit no. of products to display
     context = {
         'the_shop': the_shop,
         'products': products,
-        'categories': categories,
+        'group': grouped_products,
+        'sort_by': sort_by,
+        'show_count': show_count,
     }
     return render(request, 'shop/products.html', context)
 

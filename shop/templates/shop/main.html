@@ -73,7 +73,7 @@
                         <!--====== Main Logo ======-->
 
                         <a class="main-logo" href="{% url 'home' %}">
-                            <img src="{{ shop.logo.url }}"
+                            <img src="{{ the_shop.logo.url }}"
                                 style="border-radius: 50%; width: 3rem;">
                         </a>
                         <!--====== End - Main Logo ======-->
@@ -963,7 +963,7 @@
                                 <ul class="ah-list ah-list--design2 ah-list--link-color-white">
                                     <li>
 
-                                        <a href="shop-side-version-2.html">NEW ARRIVALS</a></li>
+                                        <a href="{% url 'products' the_shop.name %}">SHOP</a></li>
                                     <li class="has-dropdown">
 
                                         <a>PAGES<i class="fas fa-angle-down u-s-m-l-6"></i></a>

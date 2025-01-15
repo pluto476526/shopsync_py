@@ -1,4 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.contenttypes.models import ContentType
+from django.http import HttpResponseForbidden
+from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.contrib import messages
 from django.utils.decorators import method_decorator
@@ -605,6 +608,7 @@ def shop_profile_view(request):
         image2 = request.FILES.get('image2')
         title1 = request.POST.get('title1', '').strip()
         title2 = request.POST.get('title2', '').strip()
+        title3 = request.POST.get('title3', '').strip()
         role = request.POST.get('role_name', '').strip()
         new_units = request.POST.get('units', '').strip()
         ls_threshold = request.POST.get('ls_threshold', '').strip()
@@ -635,6 +639,7 @@ def shop_profile_view(request):
             elif source == 'settings_form':
                 shop.title1 = title1
                 shop.title2 = title2
+                shop.title3 = title3
                 shop.save()
 
                 if role:
@@ -745,6 +750,8 @@ def deals_and_promos_view(request):
                 shop = shop,
                 product_id = product_instance.product_id,
                 product = product_instance.product,
+                price = product_instance.price - float(amount),
+                category = product_instance.category.category,
                 avatar = product_instance.avatar,
                 discount = amount,
                 time = datetime.now(timezone(timedelta(hours=3))) + timedelta(hours=int(duration)+3)
@@ -861,7 +868,7 @@ def deals_and_promos_view(request):
             messages.success(request, f'Deal for {product.product} deactivated. Please confirm current price.')
             return redirect('deals_and_promos')
 
-    todays_deals = TodaysDeal.objects.filter(shop=shop)
+    todays_deals = TodaysDeal.objects.filter(shop=shop, is_deleted=False)
     categories_no_sale = all_categories.filter(in_sale=False)
     available_products = all_products.filter(in_deals=False)
     in_discounts = all_products.filter(in_discount=True)
@@ -875,7 +882,7 @@ def deals_and_promos_view(request):
         'in_sales': in_sales,
         'category_sales': category_sales,
         'coupons': coupons,
-        'todays_deals':todays_deals,
+        'todays_deals': [{'object': d,'app_label': d._meta.app_label, 'model_name': d._meta.model_name} for d in todays_deals],
     }
     return render(request, 'dash/deals_and_promos.html', context)
 
@@ -886,8 +893,8 @@ def staff_view(request):
     if not shop:
         return redirect('error_page')
 
-    staff = Profile.objects.filter(shop=shop, in_staff=True)
-    roles = Role.objects.filter(shop=shop)
+    staff = Profile.objects.filter(shop=shop, in_staff=True, is_deleted=False)
+    roles = Role.objects.filter(shop=shop, is_deleted=False)
 
     if request.method == 'POST':
         username = request.POST.get('username', '').strip()
@@ -909,4 +916,47 @@ def staff_view(request):
     
     context = {'staff': staff, 'roles': roles}
     return render(request, 'dash/staff.html', context)
+
+
+
+# @method_decorator(login_required, name='dispatch')
+def delete_view(request, app_label, model_name, object_id):
+    """
+    Universal delete view for any model.
+    Parameters:
+        app_label: The name of the app (e.g., 'shop').
+        model_name: The name of the model (e.g., 'Product').
+        object_id: The ID of the object to delete.
+    """
+    referer = request.META.get('HTTP_REFERER')
+    logger.debug(referer)
+
+    try:
+        # Get the model class
+        content_type = ContentType.objects.get(app_label=app_label, model=model_name.lower())
+        model = content_type.model_class()
+
+        # Get the object instance
+        obj = get_object_or_404(model, id=object_id)
+
+        # Check user permissions (Optional: Customize this logic)
+        if not request.user.is_superuser and hasattr(obj, 'shop'):
+            if obj.shop != request.user.profile.shop:
+                return HttpResponseForbidden("You do not have permission to delete this item.")
+
+        if request.method == 'POST':
+            # obj.delete()
+            obj.is_deleted = True
+            obj.save()
+            messages.success(request, f"{model_name} with ID {object_id} has been deleted.")
+            return redirect(request.POST.get('referer'))  # Adjust redirection as needed
+
+        # Render a confirmation page
+        context = {'object': obj, 'model_name': model_name, 'referer': referer}
+        return render(request, 'dash/dash_delete.html', context)
+
+    except ContentType.DoesNotExist:
+        messages.error(request, "Invalid model type.")
+        return redirect(referer) # Adjust redirection as needed
+
 

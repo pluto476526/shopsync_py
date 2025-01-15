@@ -19,6 +19,7 @@ urlpatterns = [
     path('profile/', views.shop_profile_view, name='shop_profile'),
     path('deals_and_promos/', views.deals_and_promos_view, name='deals_and_promos'),
     path('staff/', views.staff_view, name='dash_staff'),
+    path('delete/<str:app_label>/<str:model_name>/<int:object_id>/', views.delete_view, name='dash_delete'),
 ]
 
 

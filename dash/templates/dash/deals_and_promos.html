@@ -280,20 +280,20 @@
             <div class="list align-items-center border-bottom py-2">
               <div class="wrapper w-100">
                 <p class="mb-2 font-weight-medium">
-                  {{ deal.product|title }}
+                  {{ deal.object.product|title }}
                 </p>
                 <div class="d-flex justify-content-between align-items-center">
                   <div class="d-flex align-items-center">
                     <i class="mdi mdi-calendar text-muted me-1"></i>
-                    <p class="mb-0 text-small text-muted">KSH. <strong>{{ deal.discount }}</strong> Discount
+                    <p class="mb-0 text-small text-muted">KSH. <strong>{{ deal.object.discount }}</strong> Discount
                       &nbsp;
-                      EXPIRES: {{ deal.time|date:"d/m/y - H:i:s" }}</p>
+                      EXPIRES: {{ deal.object.time|date:"d/m/y - H:i:s" }}</p>
                   </div>
                   <div>
-                    {% if deal.status == 'active' %}
+                    {% if deal.object.status == 'active' %}
                   <form action="" method="post">
                       {% csrf_token %}
-                      <input type="hidden" name="deal_id" value="{{ deal.id }}">
+                      <input type="hidden" name="deal_id" value="{{ deal.object.id }}">
                       <input type="hidden" name="source" value="deactivate_todays_deal">
                       <button type="submit" class="text-danger border-0 bg-white d-flex align-items-center">
                         <small>Deactivate</small>
@@ -301,15 +301,11 @@
                       </button>
                     </form>
                     {% else %}
-                  <form action="" method="post">
-                      {% csrf_token %}
-                      <input type="hidden" name="deal_id" value="{{ deal.id }}">
-                      <input type="hidden" name="source" value="delete_deal">
-                      <button class="text-danger border-0 bg-white d-flex align-items-center">
+                      <a href="{% url 'dash_delete' app_label=deal.app_label model_name=deal.model_name object_id=deal.object.id %}"
+                        class="text-danger border-0 bg-white d-flex align-items-center">
                         <small>Delete</small>
                         <i class="mdi mdi-arrow-right ms-2"></i>
-                      </button>
-                    </form>
+                      </a>
                     {% endif %} 
                   </div>
                 </div>

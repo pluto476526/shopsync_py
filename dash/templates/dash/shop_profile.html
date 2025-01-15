@@ -386,6 +386,17 @@
                           {% endif %}
                         />
                       </div>
+                      <div class="form-check">
+                        <input
+                          class="form-control"
+                          type="text"
+                          name="title3"
+                          placeholder="Short title eg. 100% Fresh Farm Produce! (less than 100 characters)"
+                          {% if my_shop.title3 %}
+                          value="{{ my_shop.title3|title|truncatechars:100 }}"
+                          {% endif %}
+                        />
+                      </div>
                     </div>
                   </div>
                   {% if staff_roles %}
