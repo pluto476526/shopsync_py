@@ -10,4 +10,5 @@ last active at shop.views.py
 
 
 make an error page and their views
-css property for images
+
+default address not updating in the checkout view

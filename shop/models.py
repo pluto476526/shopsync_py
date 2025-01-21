@@ -34,6 +34,7 @@ class Shop(models.Model):
     timestamp = models.DateTimeField(auto_now_add=True)
     is_featured = models.BooleanField(default=False)
     is_banned = models.BooleanField(default=False)
+    is_deleted = models.BooleanField(default=False)
     status = models.CharField(max_length=20, default='pending')
     total_sales = models.PositiveIntegerField(default=0)
 
@@ -49,22 +50,20 @@ class Shop(models.Model):
 class Cart(models.Model):
     shop = models.ForeignKey('shop.Shop', on_delete=models.CASCADE)
     customer = models.ForeignKey('auth.User', on_delete=models.CASCADE)
-    cart_product_id = models.CharField(max_length=10)
+    cart_id = models.CharField(max_length=10)
     category = models.CharField(max_length=50)
     product = models.ForeignKey('dash.Inventory', on_delete=models.CASCADE)
-    avatar = models.ImageField(default='dp1.jpg')
-    description = models.CharField(max_length=255, blank=True, null=True)
-    price = models.DecimalField(max_digits=10, decimal_places=2, default=0)
-    units = models.CharField(max_length=20)
     quantity = models.PositiveIntegerField()
-    discount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     total = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    town = models.ForeignKey('shop.TownsShipped', on_delete=models.SET_NULL, null=True)
+    note = models.CharField(max_length=200, null=True, blank=True)
     status = models.CharField(max_length=20, default='pending')
-    time_ordered = models.DateTimeField(auto_now_add=True)
+    timestamp = models.DateTimeField(auto_now_add=True)
     checked_out = models.DateTimeField(blank=True, null=True)
+    is_deleted = models.BooleanField(default=False)
 
     def __str__(self):
-        return f"{self.customer}'s cart: {self.cart_product_id}"
+        return f"{self.customer}'s cart: {self.cart_id}"
 
 
 class ShopHelpDesk(models.Model):
@@ -79,6 +78,7 @@ class ShopHelpDesk(models.Model):
     admin = models.ForeignKey('auth.User', on_delete=models.SET_NULL, blank=True, null=True, related_name='cc')
     is_sorted = models.BooleanField(default=False)
     timestamp = models.DateTimeField(auto_now_add=True)
+    is_deleted = models.BooleanField(default=False)
 
     def __str__(self):
         return f'{self.shop}: {self.issue}'
@@ -88,3 +88,26 @@ class ShopHelpDesk(models.Model):
             self.help_id = ''.join(secrets.choice(string.ascii_uppercase + string.digits) for _ in range(8))
         super().save(*args, **kwargs)
 
+
+class TownsShipped(models.Model):
+    shop = models.ForeignKey('shop.Shop', on_delete=models.CASCADE)
+    town = models.CharField(max_length=50)
+    price = models.PositiveIntegerField(default=0)
+    is_deleted = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f'{self.shop}: {self.town}'
+
+
+class Address(models.Model):
+    shop = models.ForeignKey('shop.Shop', on_delete=models.CASCADE, related_name='addresses')
+    user = models.ForeignKey('auth.User', on_delete=models.CASCADE)
+    county = models.CharField(max_length=20)
+    town = models.CharField(max_length=20)
+    street = models.CharField(max_length=20)
+    house = models.CharField(max_length=20)
+    is_default = models.BooleanField(default=False)
+    is_deleted = models.BooleanField(default=False)
+
+    def __str__():
+       return f'{self.user}: {self.shop}'

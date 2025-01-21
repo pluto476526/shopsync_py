@@ -125,7 +125,7 @@
                                         <div class="product-o product-o--hover-on product-o--radius">
                                             <div class="product-o__wrap">
                                                 <a class="aspect aspect--bg-grey aspect--square u-d-block" href="product-detail.html">
-                                                    <img class="aspect__img" src="{{ tc.avatar.url }}" alt="">
+                                                    <img class="aspect__img" src="{{ tc.avatar1.url }}" alt="">
                                                 </a>
                                                 <div class="product-o__action-wrap">
                                                     <ul class="product-o__action-list">
@@ -147,7 +147,7 @@
 
                                             <span class="product-o__name">
 
-                                                <a href="product-detail.html">{{ tc.product|title }}</a></span>
+                                                <a href="{% url 'product_details' the_shop.name tc.product_id %}">{{ tc.product|title }}</a></span>
                                             <div class="product-o__rating gl-rating-style"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star-half-alt"></i>
 
                                                 <span class="product-o__review">(23)</span></div>

@@ -14,10 +14,13 @@ urlpatterns = [
         path('<str:name>/orders/<str:order_id>/', views.order_details_view, name='order_details'),
         path('<str:name>/categories/', views.categories_view, name='categories'),
         path('<str:name>/add_to_cart/<str:product_no>/', views.add_to_cart, name='add_to_cart'),
+        path('<str:name>/clear_cart/', views.clear_cart_view, name='clear_cart'),
         path('<str:name>/wishlist/', views.wishlist_view, name='wishlist'),
         path('<str:name>/wishes/<str:product_no>/', views.add_to_wishlist, name='wishes'),
         path('<str:name>/helpdesk/', views.helpdesk_view, name='shop_helpdesk'),
-        path('<str:name>/about/', views.about_view, name='about'),
+        path('<str:name>/about/', views.about_view, name='shop_about'),
+        path('<str:name>/<str:model_name>/<int:object_id>/delete/', views.delete_view, name='shop_delete'),
+        path('<str:name>/addresses/', views.my_addresses_view, name='shop_addresses'),
 ]
 
 

@@ -77,7 +77,11 @@ class LowStockThreshold(models.Model):
 
 class Inventory(models.Model):
     shop = models.ForeignKey('shop.Shop', on_delete=models.CASCADE)
-    avatar = models.ImageField(default='dp1.jpg')
+    avatar1 = models.ImageField(default='pd1.jpg')
+    avatar2 = models.ImageField(default='pd2.jpg')
+    avatar3 = models.ImageField(default='pd3.jpg')
+    avatar4 = models.ImageField(default='pd4.jpg')
+    avatar5 = models.ImageField(default='pd5.jpg')
     product = models.CharField(max_length=50)
     product_id = models.CharField(max_length=10, unique=True)
     category = models.ForeignKey('dash.Category', on_delete=models.SET_NULL, null=True)
@@ -113,6 +117,7 @@ class Inventory(models.Model):
 
 class Review(models.Model):
     user = models.ForeignKey('auth.User', on_delete=models.SET_NULL, null=True)
+    email = models.EmailField(blank=True, null=True)
     productID = models.ForeignKey('dash.Inventory', on_delete=models.CASCADE)
     comment = models.CharField(max_length=100)
     body = models.TextField(blank=True, null=True)

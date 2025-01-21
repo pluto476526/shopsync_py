@@ -1,5 +1,5 @@
 from django.contrib import admin
-from shop.models import Shop, ShopCategory, Cart
+from shop.models import Shop, ShopCategory, Cart, Address
 
 
 # Register your models here.
@@ -7,3 +7,4 @@ from shop.models import Shop, ShopCategory, Cart
 admin.site.register(Shop)
 admin.site.register(ShopCategory)
 admin.site.register(Cart)
+admin.site.register(Address)

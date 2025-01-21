@@ -1,4 +1,7 @@
-{% extends 'dash/main.html' %} {% load static %} {% block main %}
+{% extends 'dash/main.html' %}
+{% load static %}
+{% load humanize %}
+{% block main %}
 <div class="content-wrapper">
   <div class="row">
     {% if messages %} {% for message in messages %}
@@ -493,6 +496,48 @@
                             class="form-control"
                             type="text"
                             name="p_mthd"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                    {% if reg_towns %}
+                    <div class="row mb-3 bg-secondary">
+                      <label class="col-md-4 col-lg-3 col-form-label">Registered Towns</label>
+                      <div class="col-md-8 col-lg-9">
+                        {% for r in reg_towns %}
+                        <div class="form-check col-12 d-flex align-items-center justify-content-center">
+                          <div class="col-4">
+                            <label>{{ r.town|title }}</label>
+                          </div>
+                          <div class="col-4">
+                            <label>KES. {{ r.price|intcomma }}</label>
+                          </div>
+                          <div class="col-4">
+                            <button type="submit" title="Remove"
+                              class="form-check-input btn-close"></button>
+                          </div>
+                        </div>
+                        {% endfor %}
+                      </div>
+                    </div>
+                    {% endif %}
+                    <div class="row mb-3">
+                      <label class="col-md-4 col-lg-3 col-form-label"
+                        >New Town, Shipping Cost</label
+                      >
+                      <div class="col-md-8 col-lg-9">
+                        <div class="form-check">
+                          <input
+                            class="form-control"
+                            type="text"
+                            name="town"
+                          />
+                        </div>
+                        <div class="form-check">
+                          <input
+                            class="form-control"
+                            type="number"
+                            name="shipping_cost"
                           />
                         </div>
                       </div>
