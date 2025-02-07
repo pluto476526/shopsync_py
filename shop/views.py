@@ -5,8 +5,8 @@ from django.contrib.contenttypes.models import ContentType
 from django.contrib import messages
 from django.db.models import Sum, Count, F
 from django.contrib.auth.decorators import login_required
-from shop.models import Shop, Cart, ShopHelpDesk, TownsShipped, Address
-from dash.models import Inventory, Category, PaymentMethod, Delivery, TodaysDeal, Profile, Review
+from shop.models import Shop, Cart, CartItem, ShopHelpDesk, TownsShipped, Address
+from dash.models import Inventory, Category, PaymentMethod, Delivery, TodaysDeal, Profile, Review, Coupon
 from datetime import datetime, timedelta, timezone
 import logging
 import secrets
@@ -26,29 +26,43 @@ def get_shop(name):
 
 # Helper function: Calculate cart total
 def calculate_cart_total(cart_items):
-    return cart_items.aggregate(total=Sum('total'))['total'] or 0
+    return cart_items.aggregate(total=Sum('total'))['total'] or -1
+
 
 # Helper: Add product to cart
 def add_to_cart(request, name, product_no, quantity):
+    # Get the shop
     the_shop = get_shop(name)
+    
+    # Get the product from the shop
     product = get_object_or_404(Inventory, product_id=product_no, shop=the_shop)
+    
+    # Ensure the user has an active cart
+    cart, created = Cart.objects.get_or_create(
+        shop = the_shop,
+        customer = request.user,
+    )
 
-    # Check if product is already in cart
-    if Cart.objects.filter(is_deleted=False, shop=the_shop, customer=request.user, cart_id=product.product_id, status='pending').exists():
-        messages.info(request, f"{product.product} is already in your cart.")
-
-    # Add to cart
+    # Check if the product is already in the cart
+    cart_item = CartItem.objects.filter(cart=cart, product=product, status='pending').first()
+    
+    if cart_item:
+        # If the product is already in the cart, update its quantity
+        cart_item.quantity += quantity
+        cart_item.save()
+        messages.info(request, f"{product.product} quantity updated in your cart.")
+        return
     else:
-        Cart.objects.create(
-            shop = the_shop,
-            customer = request.user,
+        # Otherwise, add a new CartItem
+        CartItem.objects.create(
+            cart = cart,
             product = product,
-            cart_id = product.product_id,
             quantity = quantity,
-            total = float(product.price) * float(quantity),
+            total = product.price * quantity,
+            status = 'pending',
         )
-        messages.success(request, f"{product.product} added to cart.")
-
+        messages.success(request, f"{product.product} added to your cart.")
+        return
 
 # View: Empty cart
 def clear_cart_view(request, name):
@@ -64,30 +78,38 @@ def clear_cart_view(request, name):
 
 # View: Add product to wishlist
 def add_to_wishlist(request, name, product_no):
+    # Get the shop
     the_shop = get_shop(name)
-    product = get_object_or_404(Inventory, id=product_no, shop=the_shop)
-
-    # Check if product is already in wishlist
-    if Cart.objects.filter(is_deleted=False, shop=the_shop, customer=request.user, cart_id=product.product_id, status='in_wishes').exists():
-        messages.info(request, f"{product.product} is already in your wishlist.")
     
-    # Check if product is already in cart
-    elif Cart.objects.filter(is_deleted=False, shop=the_shop, customer=request.user, cart_id=product.product_id, status='pending').exists():
-        messages.info(request, f"{product.product} is already in your cart.")
+    # Get the product from the shop
+    product = get_object_or_404(Inventory, product_id=product_no, shop=the_shop)
     
-    # Add to wishlist
-    else:
-        Cart.objects.create(
-            shop=the_shop,
-            customer=request.user,
-            product=product,
-            cart_id=product.product_id,
-            quantity=1,
-            total=product.price,
-            status='in_wishes',
-        )
-        messages.success(request, f"{product.product} added to wishlist.")
+    # Ensure the user has a wishlist cart
+    wishlist, created = Cart.objects.get_or_create(
+        shop=the_shop,
+        customer=request.user,
+    )
 
+    # Check if the product is already in the wishlist
+    if CartItem.objects.filter(cart=wishlist, product=product, status='in_wishes').exists():
+        messages.info(request, f"{product.name} is already in your wishlist.")
+        return
+
+    # Check if the product is already in the user's active cart
+    active_cart = Cart.objects.filter(shop=the_shop, customer=request.user).first()
+    if active_cart and CartItem.objects.filter(cart=active_cart, product=product, status='pending').exists():
+        messages.info(request, f"{product.name} is already in your cart.")
+        return
+
+    # Add the product to the wishlist
+    CartItem.objects.create(
+        cart = wishlist,
+        product = product,
+        quantity = 1,
+        total = product.price,
+        status = 'in_wishes',
+    )
+    messages.success(request, f"{product.name} added to your wishlist.")
 
 # View: Shop homepage
 def index(request, name):
@@ -102,7 +124,8 @@ def index(request, name):
         f_categories = categories.filter(is_featured=True).order_by('timestamp')[:3]
 
         # Fetch products from top categories(tc) excluding those in the user's pending cart
-        cart_products = Cart.objects.filter(is_deleted=False, shop=shop, customer=request.user, status='pending').values_list('cart_id', flat=True)
+        my_cart = get_object_or_404(Cart, shop=shop, customer=request.user)
+        cart_products = CartItem.objects.filter(cart=my_cart, is_deleted=False, status='pending').values_list('cart_id', flat=True)
         tc_products = []
 
         for t in top_categories:
@@ -163,9 +186,22 @@ def products_view(request, name):
     min_price = request.GET.get('min_price')
     max_price = request.GET.get('max_price')
     the_shop = get_shop(name)
-    products = Inventory.objects.filter(is_deleted=False, status='available', shop=the_shop).exclude(
-        product_id__in=Cart.objects.filter(is_deleted=False, shop=the_shop, customer=request.user, status='pending').values_list('cart_id', flat=True)
-    )
+
+    # Get all product IDs in the current user's cart for this shop
+    cart_items = CartItem.objects.filter(
+        cart__shop = the_shop,
+        cart__customer = request.user,
+        status = 'pending'
+    ).values_list('product_id', flat=True)
+
+    # Get all products excluding the ones already in the user's cart
+    products = Inventory.objects.filter(
+        is_deleted = False,
+        status = 'available',
+        shop = the_shop
+    ).exclude(id__in=cart_items)
+
+
     categories = Category.objects.filter(is_deleted=False, shop=the_shop).annotate(
         product_count=Count('inventory')
     )
@@ -209,9 +245,14 @@ def products_view(request, name):
         prod_id = request.POST.get('id')
         source = request.POST.get('source')
 
-        if source == 'add_to_wishlist':
-            add_to_wishlist(request, the_shop.name, prod_id)
-            return redirect('products', the_shop.name)
+        match source:
+            case 'add_to_wishlist':
+                add_to_wishlist(request, the_shop.name, prod_id)
+                return redirect('products', the_shop.name)
+            case 'add_to_cart':
+                add_to_cart(request, the_shop.name, prod_id, 1)
+                return redirect('products', the_shop.name)
+
     context = {
         'the_shop': the_shop,
         'products': products,
@@ -278,8 +319,8 @@ def product_details_view(request, name, pk):
 def cart_view(request, name):
     referer = request.META.get('HTTP_REFERER')
     the_shop = get_shop(name)
-    cart_items = Cart.objects.filter(is_deleted=False, shop=the_shop, customer=request.user, status='pending')
-    item = cart_items.last()
+    my_cart = get_object_or_404(Cart, shop=the_shop, customer=request.user)
+    cart_items = CartItem.objects.filter(cart=my_cart, status='pending')
     reg_towns = TownsShipped.objects.filter(is_deleted=False, shop=the_shop)
 
     if request.method == 'POST':
@@ -291,12 +332,14 @@ def cart_view(request, name):
 
         if source == 'add_town':
             town = get_object_or_404(TownsShipped, pk=town_id)
-            cart_items.update(town=town)
+            my_cart.town=town
+            my_cart.save()
             messages.success(request, 'Shipping costs calculated.')
             return redirect('cart', name=the_shop.name)
 
         elif source == 'add_note':
-            cart_items.update(note=note)
+            my_cart.note=note
+            my_cart.save()
             messages.success(request, 'Delivery note updated.')
             return redirect('cart', name=the_shop.name)
 
@@ -305,9 +348,9 @@ def cart_view(request, name):
             for cart, quantity in zip(cart_ids, quantities):
                 try:
                     quantity = max(1, min(int(quantity), 100))
-                    cart_item = cart_items.get(cart_id=cart)
+                    product = get_object_or_404(Inventory, product_id=cart)
+                    cart_item = cart_items.get(product=product)
                     cart_item.quantity = quantity
-                    cart_item.total = quantity * cart_item.product.price
                     cart_item.save()
                 except (Cart.DoesNotExist, ValueError):
                     messages.error(request, "Invalid cart update request.")
@@ -316,7 +359,7 @@ def cart_view(request, name):
             return redirect('cart', name=the_shop.name)
        
         elif source == 'checkout_btn':
-            if item.town:
+            if my_cart.town:
                 cart_items.update(status='checkout')
                 messages.success(request, 'Please fill the details below to complete checkout.')
                 return redirect('checkout', name=the_shop.name)
@@ -324,19 +367,11 @@ def cart_view(request, name):
                 messages.error(request, 'Please select nearest town and calculate shipping costs.')
                 return redirect('cart', name=the_shop.name)
 
-    sub_total = calculate_cart_total(cart_items)
-    if item and item.town:
-        total = sub_total + item.town.price
-    else:
-        total = sub_total
     context = {
         'referer': referer,
         'reg_towns': reg_towns,
+        'my_cart': my_cart,
         'cart_items': [{'objects': cart, 'model_name': cart._meta.model_name} for cart in cart_items],
-        'cart_total': total,
-        'sub_total': sub_total,
-        'shipping_cost': item.town if item and item.town else 0,
-        'note': item.note if item and item.note else '',
     }
     return render(request, 'shop/cart.html', context)
 
@@ -344,12 +379,11 @@ def cart_view(request, name):
 @login_required
 def checkout_view(request, name):
     the_shop = get_shop(name)
-    cart_items = Cart.objects.filter(is_deleted=False, shop=the_shop, customer=request.user, status='checkout')
-    item = cart_items.last()
-    addresses = Address.objects.filter(is_deleted=False, shop=the_shop, user=request.user)
-    for a in addresses:
-        logger.debug(f'{a.id}: {a.is_default}')
-    
+    my_cart = get_object_or_404(Cart, shop=the_shop, customer=request.user)
+    cart_items = CartItem.objects.filter(cart=my_cart, is_deleted=False, status='checkout')
+    addresses = Address.objects.filter(is_deleted=False, shop=the_shop, user=request.user) 
+    payment_methods = PaymentMethod.objects.filter(shop=the_shop)
+
     if not cart_items.exists():
         messages.error(request, "Your cart is empty.")
 
@@ -360,67 +394,56 @@ def checkout_view(request, name):
         town = request.POST.get('town')
         address = request.POST.get('address')
         instructions = request.POST.get('instructions')
-        payment_method = request.POST.get('payment_method')
+        payment_method = request.POST.get('payment')
         source = request.POST.get('source')
         addr_id = request.POST.get('addr_id')
-        # payment_instance = get_object_or_404(PaymentMethod, method=payment_method)
-        order_number = random_id()
-        logger.debug(f'addr_id: {addr_id}') 
-        if source == 'edit_default_addr':
-            addresses.update(is_default=False)
-            obj = get_object_or_404(Address, pk=addr_id)
-            logger.debug(obj.county)
-            obj.is_default = True
-            obj.save()
-            messages.success(request, 'Default address updated.')
-            return redirect('checkout', the_shop.name)
-
-        # Create deliveries
-        deliveries = [
-            Delivery(
-                shop=the_shop,
-                username=request.user,
-                order_number=order_number,
-                product=item.product,
-                quantity=item.quantity,
-                price=item.price,
-                total=item.total,
-                phone=phone,
-                email=email,
-                county=county,
-                town=town,
-                address=address,
-                payment_method=payment_instance,
-                instructions=instructions,
-                source='cart',
-            )
-            for item in cart_items
-        ]
-        Delivery.objects.bulk_create(deliveries)
-        cart_items.update(status='checked_out', checked_out=datetime.now())
-
-        messages.success(request, f"Order #{order_number} checked out successfully.")
-        return redirect('shop', name=the_shop)
+        cpn = request.POST.get('coupon')
+           
+        match source:
+            case 'edit_default_addr':
+                addresses.update(is_default=False)
+                obj = get_object_or_404(Address, pk=addr_id)
+                obj.is_default = True
+                obj.save()
+                messages.success(request, 'Default address updated.')
+                return redirect('checkout', the_shop.name)
+            case 'coupon_form':
+                coupon = get_object_or_404(Coupon, coupon_id=cpn)
+                if coupon and coupon.is_active:
+                    my_cart.coupon = coupon
+                    my_cart.save()
+                    messages.success(request, '{coupon.percent_off}% discount applied.')
+                    return redirect('checkout', the_shop.name)
+                else:
+                    messages.error(request, 'Please check coupon number.')
+                    return redirect('checkout', the_shop.name)
+            case 'checkout':
+                delivery, created = Delivery.objects.get_or_create(username=request.user, shop=the_shop)
+                delivery.note = my_cart.note
+                delivery.town = my_cart.town
+                delivery.save()
+                for i in cart_items:
+                    # product = get_object_or_404(shop=the_shop, product=cart_items.product.product)
+                    DeliveryItem.objects.create(
+                        delivery = delivery,
+                        product = cart_item.product,
+                        quantity = cart_item.quantity
+                    )
+                cart_items.update(status='checked_out', checked_out=datetime.now())
+                messages.success(request, f"Check out completed.")
+                return redirect('shop', name=the_shop)
     
-    if cart_items:
-        sub_total = calculate_cart_total(cart_items)
-    else:
-        sub_total = 0
-    if item and item.town:
-        total = sub_total + item.town.price
-    else:
-        total = sub_total
+    try:
+        default_addr = addresses.get(is_default=True)
+    except Exception:
+        default_addr = None
 
-    payment_methods = PaymentMethod.objects.filter(shop=the_shop)
-    default_addr = addresses.get(is_default=True)
     context = {
         'the_shop': the_shop,
-        'sub_total': sub_total,
-        'total': total,
         'addresses': addresses,
         'default_addr': default_addr,
         'payment_methods': payment_methods,
-        'shipping_price': item.town if item and item.town else 0,
+        'my_cart': my_cart,
         'cart_items': [{'objects': cart, 'model_name': cart._meta.model_name} for cart in cart_items],
     }
     return render(request, 'shop/checkout.html', context)

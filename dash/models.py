@@ -143,40 +143,47 @@ class Delivery(models.Model):
     username = models.ForeignKey('auth.User', on_delete=models.SET_NULL, blank=True, null=True, related_name='customer')
     unregistered_user = models.CharField(max_length=50, blank=True, null=True)
     order_number = models.CharField(max_length=10)
-    prod_id = models.CharField(max_length=10)
-    category = models.ForeignKey('dash.Category', on_delete=models.SET_NULL, null=True)
-    product = models.ForeignKey('dash.Inventory', on_delete=models.SET_NULL, null=True)
-    avatar = models.ImageField(default='dp1.jpg')
-    quantity = models.PositiveIntegerField()
-    price = models.PositiveIntegerField(default=0)
-    units = models.ForeignKey('dash.Units', on_delete=models.SET_NULL, null=True)
     discount = models.IntegerField(default=0)
-    status = models.CharField(max_length=20, default='processing')
-    admin = models.ForeignKey('auth.User', on_delete=models.SET_NULL, blank=True, null=True, related_name='admin')
-    driver = models.ForeignKey('dash.Profile', on_delete=models.SET_NULL, blank=True, null=True, related_name='staff')
     timestamp = models.DateTimeField(auto_now_add=True)
     time_confirmed = models.DateTimeField(blank=True, null=True)
     time_in_transit = models.DateTimeField(blank=True, null=True)
     time_completed = models.DateTimeField(blank=True, null=True)
-    total = models.PositiveIntegerField(default=0)
     phone = models.CharField(max_length=15, blank=True, null=True)
     email = models.EmailField(unique=False, blank=True, null=True)
-    county = models.CharField(max_length=20, default='Nairobi')
-    town = models.CharField(max_length=20, default='Nairobi')
-    address = models.CharField(max_length=100, blank=True, null=True)
+    address = models.ForeignKey('shop.Address', on_delete=models.SET_NULL, blank=True, null=True)
     payment_method = models.ForeignKey('dash.PaymentMethod', on_delete=models.SET_NULL, blank=True, null=True)
-    instructions = models.TextField(blank=True, null=True)
+    admin = models.ForeignKey('auth.User', on_delete=models.SET_NULL, blank=True, null=True, related_name='admin')
+    driver = models.ForeignKey('dash.Profile', on_delete=models.SET_NULL, blank=True, null=True, related_name='staff')
+    note = models.TextField(blank=True, null=True)
     source = models.CharField(max_length=10, default='dash')
     is_deleted = models.BooleanField(default=False)
-
+    status = models.CharField(max_length=20, default='processing')
+    
     def __str__(self):
         return f'{self.shop}: {self.order_number}'
+
+    @property
+    def total_price(self):
+        """Calculate the total price for all item"""
+        return sum(item.total for item in self.items.all())
 
     def save(self, *args, **kwargs):
         if not self.order_number:
             self.order_number = ''.join(secrets.choice(string.ascii_uppercase + string.digits) for _ in range(8))
         super().save(*args, **kwargs)
 
+
+class DeliveryItem(models.Model):
+    delivery = models.ForeignKey('dash.Delivery', on_delete=models.SET_NULL, null=True, related_name='items')
+    product = models.ForeignKey('dash.Inventory', on_delete=models.SET_NULL, null=True)
+    quantity = models.PositiveIntegerField()
+    total = models.DecimalField(max_digits=10, decimal_places=2)
+
+    def save(self, *args, **kwargs):
+        """Automatically calculate the total price of the item"""
+        self.total = self.product.price * self.quantity
+        super().save(*args, **kwargs)
+    
 
 class Coupon(models.Model):
     shop = models.ForeignKey('shop.Shop', on_delete=models.CASCADE)
@@ -185,10 +192,11 @@ class Coupon(models.Model):
     status = models.CharField(max_length=10, default='active')
     timestamp = models.DateTimeField(auto_now_add=True)
     total_sales = models.PositiveIntegerField(default=0)
+    is_active = models.BooleanField(default=True)
     is_deleted = models.BooleanField(default=False)
 
     def __str__(self):
-        return f'{self.shop}: {self.issue}'
+        return f'{self.shop}: {self.percent_off}'
 
     def save(self, *args, **kwargs):
         if not self.coupon_id:

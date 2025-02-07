@@ -47,23 +47,74 @@ class Shop(models.Model):
         super().save(*args, **kwargs)
 
 
+# class Cart(models.Model):
+#     shop = models.ForeignKey('shop.Shop', on_delete=models.CASCADE)
+#    customer = models.ForeignKey('auth.User', on_delete=models.CASCADE)
+#    cart_id = models.CharField(max_length=10)
+#    category = models.CharField(max_length=50)
+#    product = models.ForeignKey('dash.Inventory', on_delete=models.CASCADE)
+#    quantity = models.PositiveIntegerField()
+#    total = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+#    town = models.ForeignKey('shop.TownsShipped', on_delete=models.SET_NULL, null=True)
+#    note = models.CharField(max_length=200, null=True, blank=True)
+#    status = models.CharField(max_length=20, default='pending')
+#    timestamp = models.DateTimeField(auto_now_add=True)
+#    checked_out = models.DateTimeField(blank=True, null=True)
+#    is_deleted = models.BooleanField(default=False)
+#    discount = models.ForeignKey('dash.Coupon', on_delete=models.SET_NULL, blank=True, null=True)
+#
+#    def __str__(self):
+#        return f"{self.customer}'s cart: {self.cart_id}"
+
+
 class Cart(models.Model):
     shop = models.ForeignKey('shop.Shop', on_delete=models.CASCADE)
     customer = models.ForeignKey('auth.User', on_delete=models.CASCADE)
-    cart_id = models.CharField(max_length=10)
-    category = models.CharField(max_length=50)
-    product = models.ForeignKey('dash.Inventory', on_delete=models.CASCADE)
-    quantity = models.PositiveIntegerField()
-    total = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    cart_id = models.CharField(max_length=10, unique=True)
     town = models.ForeignKey('shop.TownsShipped', on_delete=models.SET_NULL, null=True)
     note = models.CharField(max_length=200, null=True, blank=True)
-    status = models.CharField(max_length=20, default='pending')
     timestamp = models.DateTimeField(auto_now_add=True)
     checked_out = models.DateTimeField(blank=True, null=True)
     is_deleted = models.BooleanField(default=False)
+    coupon = models.ForeignKey('dash.Coupon', on_delete=models.SET_NULL, blank=True, null=True)
+    discount = models.PositiveIntegerField(default=0)
+    
+    def __str__(self):
+        return f"{self.customer.username}'s cart: {self.cart_id}"
+    
+    @property
+    def original_price(self):
+        """Calculate total price of all items in the cart without applying discounts or coupons"""
+        return sum(item.total for item in self.items.all()) # related_name='items'
+
+    @property
+    def total_price(self):
+        """Calculate the total price of all items in the cart after applying everything."""
+        total = self.original_price
+        if self.coupon:
+            total = float(total) * (1 - self.coupon.percent_off / 100)
+        if self.town:
+            total = float(total) + self.town.price
+        if self.discount:
+            total = float(total) - self.discount
+        return max(total, 0)
+
+ 
+class CartItem(models.Model):
+    cart = models.ForeignKey('shop.Cart', on_delete=models.CASCADE, related_name='items')
+    product = models.ForeignKey('dash.Inventory', on_delete=models.CASCADE)
+    quantity = models.PositiveIntegerField()
+    total = models.DecimalField(max_digits=10, decimal_places=2)
+    status = models.CharField(max_length=20, default='pending')
+    is_deleted = models.BooleanField(default=False)
+    
+    def save(self, *args, **kwargs):
+        """Automatically calculate the total price for the item."""
+        self.total = self.product.price * self.quantity
+        super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"{self.customer}'s cart: {self.cart_id}"
+        return f"{self.quantity} x {self.product.name} in {self.cart.cart_id}"
 
 
 class ShopHelpDesk(models.Model):

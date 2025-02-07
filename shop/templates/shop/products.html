@@ -228,8 +228,11 @@
                                             <div class="product-m__quick-look">
                                                 <a class="fas fa-search" data-modal="modal" data-modal-id="#quick-look" data-tooltip="tooltip" data-placement="top" title="Quick Look"></a>
                                             </div>
-                                            <form class="product-m__add-cart">
-                                                    <a class="btn--e-brand" onclick="this.form.submit">Add to Cart</a>
+                                            <form class="product-m__add-cart" method="post">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="id" value="{{ p.product_id }}">
+                                                <input type="hidden" name="source" value="add_to_cart">
+                                                <a href="#" class="btn--e-brand" onclick="event.preventDefault(); this.closest('form').submit();">Add to Cart</a>
                                             </form>
                                         </div>
                                         <div class="product-m__content">
@@ -463,8 +466,10 @@
                                             <!--====== End - Input Counter ======-->
                                         </div>
                                         <div class="u-s-m-b-15">
-
-                                            <button class="btn btn--e-brand-b-2" type="submit">Add to Cart</button></div>
+                                            <form>
+                                            <button class="btn btn--e-brand-b-2" type="submit">Add to Cart11</button>
+                                            </form>
+                                        </div>
                                     </div>
                                 </form>
                             </div>

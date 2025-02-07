@@ -78,7 +78,7 @@
                                                             <span>KES. {{ c.objects.product.price|intcomma }} per {{ c.objects.product.units.units }}</span>
                                                         </li>
                                                         <li>
-                                                            <span>Added on: {{ c.objects.timestamp }}</span>
+                                                            <span>Added on: {{ my_cart.timestamp }}</span>
                                                         </li>
                                                     </ul>
                                                 </div>
@@ -188,7 +188,7 @@
                                                 {% csrf_token %}
                                                 <input type="hidden" name="source" value="add_note">
                                                 <label for="f-cart-note"></label>
-                                                <textarea name="note" class="text-area text-area--primary-style" id="f-cart-note">{{ note|capfirst }}</textarea>
+                                                <textarea name="note" class="text-area text-area--primary-style" id="f-cart-note">{{ my_cart.note|capfirst }}</textarea>
                                                 <br><br>
                                                 <div>
                                                     <button typr="submit" class="btn f-cart__ship-link btn--e-transparent-brand-b-2">SAVE NOTE</button>
@@ -203,20 +203,22 @@
                                             <table class="f-cart__table">
                                                 <tbody>
                                                     <tr>
-                                                        <td>SHIPPING</td>
-                                                        <td>{% if shipping_cost %} KES. {{ shipping_cost.price|intcomma }} {% endif %}</td>
-                                                    </tr>
-                                                    <!-- <tr>
-                                                        <td>TAX</td>
-                                                        <td>KES. 274</td>
-                                                    </tr> -->
-                                                    <tr>
                                                         <td>SUBTOTAL</td>
-                                                        <td>KES. {{ sub_total|intcomma }}</td>
+                                                        <td>KES. {{ my_cart.original_price|intcomma }}</td>
                                                     </tr>
+                                                    <tr>
+                                                        <td>SHIPPING</td>
+                                                        <td>KES. {{ my_cart.town.price|intcomma }}</td>
+                                                    </tr>
+                                                    {% if my_cart.discount %}
+                                                    <tr>
+                                                        <td>DISCOUNT</td>
+                                                        <td>KES. 274</td>
+                                                    </tr>
+                                                    {% endif %}
                                                     <tr>
                                                         <td>GRAND TOTAL</td>
-                                                        <td>KES. {{ cart_total|intcomma }}</td>
+                                                        <td>KES. {{ my_cart.total_price|intcomma }}</td>
                                                     </tr>
                                                 </tbody>
                                             </table>
