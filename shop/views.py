@@ -4,9 +4,10 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.contenttypes.models import ContentType
 from django.contrib import messages
 from django.db.models import Sum, Count, F
+from django.db import transaction
 from django.contrib.auth.decorators import login_required
 from shop.models import Shop, Cart, CartItem, ShopHelpDesk, TownsShipped, Address
-from dash.models import Inventory, Category, PaymentMethod, Delivery, TodaysDeal, Profile, Review, Coupon
+from dash.models import Inventory, Category, PaymentMethod, Delivery, DeliveryItem, TodaysDeal, Profile, Review, Coupon
 from datetime import datetime, timedelta, timezone
 import logging
 import secrets
@@ -30,27 +31,25 @@ def calculate_cart_total(cart_items):
 
 
 # Helper: Add product to cart
-def add_to_cart(request, name, product_no, quantity):
+def add_to_cart(request, name, product_no, quantity=1):
     # Get the shop
     the_shop = get_shop(name)
     
-    # Get the product from the shop
-    product = get_object_or_404(Inventory, product_id=product_no, shop=the_shop)
+    # Get the product
+    product = get_object_or_404(Inventory, product_id=product_no)
     
     # Ensure the user has an active cart
     cart, created = Cart.objects.get_or_create(
         shop = the_shop,
         customer = request.user,
+        status = 'processing',
     )
 
     # Check if the product is already in the cart
-    cart_item = CartItem.objects.filter(cart=cart, product=product, status='pending').first()
+    cart_item = CartItem.objects.filter(cart=cart, product=product).first()
     
     if cart_item:
-        # If the product is already in the cart, update its quantity
-        cart_item.quantity += quantity
-        cart_item.save()
-        messages.info(request, f"{product.product} quantity updated in your cart.")
+        messages.info(request, f'{product.product} is already in your cart.')
         return
     else:
         # Otherwise, add a new CartItem
@@ -59,7 +58,6 @@ def add_to_cart(request, name, product_no, quantity):
             product = product,
             quantity = quantity,
             total = product.price * quantity,
-            status = 'pending',
         )
         messages.success(request, f"{product.product} added to your cart.")
         return
@@ -124,8 +122,8 @@ def index(request, name):
         f_categories = categories.filter(is_featured=True).order_by('timestamp')[:3]
 
         # Fetch products from top categories(tc) excluding those in the user's pending cart
-        my_cart = get_object_or_404(Cart, shop=shop, customer=request.user)
-        cart_products = CartItem.objects.filter(cart=my_cart, is_deleted=False, status='pending').values_list('cart_id', flat=True)
+        my_cart = Cart.objects.filter(shop=shop, customer=request.user, status='processing').first()
+        cart_products = CartItem.objects.filter(cart=my_cart, is_deleted=False).values_list('id', flat=True)
         tc_products = []
 
         for t in top_categories:
@@ -150,13 +148,13 @@ def index(request, name):
         f_products = products.filter(is_featured=True).order_by('timestamp')[:4]
         
         if request.method == 'POST':
-            logger.debug(request.POST)
             prod_id = request.POST.get('id')
             source = request.POST.get('source')
-            logger.debug(f'posted')
-            logger.debug(f'src: {source}')
             if source == 'add_to_wishlist':
                 add_to_wishlist(request, shop.name, prod_id)
+                return redirect('shop', shop.name)
+            if source == 'add_to_cart':
+                add_to_cart(request, shop.name, prod_id, 1)
                 return redirect('shop', shop.name)
         # Prepare context for rendering
         context = {
@@ -185,14 +183,15 @@ def products_view(request, name):
     show_count = int(request.GET.get('show', 12))
     min_price = request.GET.get('min_price')
     max_price = request.GET.get('max_price')
+    
+    # Get shop object
     the_shop = get_shop(name)
 
+    # Current users cart for this shop
+    my_cart = Cart.objects.filter(shop=the_shop, customer=request.user, status='processing').first()
+
     # Get all product IDs in the current user's cart for this shop
-    cart_items = CartItem.objects.filter(
-        cart__shop = the_shop,
-        cart__customer = request.user,
-        status = 'pending'
-    ).values_list('product_id', flat=True)
+    cart_items = CartItem.objects.filter(cart=my_cart).values_list('product_id', flat=True)
 
     # Get all products excluding the ones already in the user's cart
     products = Inventory.objects.filter(
@@ -319,8 +318,8 @@ def product_details_view(request, name, pk):
 def cart_view(request, name):
     referer = request.META.get('HTTP_REFERER')
     the_shop = get_shop(name)
-    my_cart = get_object_or_404(Cart, shop=the_shop, customer=request.user)
-    cart_items = CartItem.objects.filter(cart=my_cart, status='pending')
+    my_cart = Cart.objects.filter(shop=the_shop, customer=request.user, status='processing').first()
+    cart_items = CartItem.objects.filter(cart=my_cart)
     reg_towns = TownsShipped.objects.filter(is_deleted=False, shop=the_shop)
 
     if request.method == 'POST':
@@ -332,13 +331,13 @@ def cart_view(request, name):
 
         if source == 'add_town':
             town = get_object_or_404(TownsShipped, pk=town_id)
-            my_cart.town=town
+            my_cart.town = town
             my_cart.save()
             messages.success(request, 'Shipping costs calculated.')
             return redirect('cart', name=the_shop.name)
 
         elif source == 'add_note':
-            my_cart.note=note
+            my_cart.note = note
             my_cart.save()
             messages.success(request, 'Delivery note updated.')
             return redirect('cart', name=the_shop.name)
@@ -360,7 +359,8 @@ def cart_view(request, name):
        
         elif source == 'checkout_btn':
             if my_cart.town:
-                cart_items.update(status='checkout')
+                my_cart.status = 'checkout'
+                my_cart.save()
                 messages.success(request, 'Please fill the details below to complete checkout.')
                 return redirect('checkout', name=the_shop.name)
             else:
@@ -379,11 +379,12 @@ def cart_view(request, name):
 @login_required
 def checkout_view(request, name):
     the_shop = get_shop(name)
-    my_cart = get_object_or_404(Cart, shop=the_shop, customer=request.user)
-    cart_items = CartItem.objects.filter(cart=my_cart, is_deleted=False, status='checkout')
-    addresses = Address.objects.filter(is_deleted=False, shop=the_shop, user=request.user) 
+    addresses = Address.objects.filter(is_deleted=False, shop=the_shop, user=request.user)
+    default_addr = addresses.filter(is_default=True).first()
     payment_methods = PaymentMethod.objects.filter(shop=the_shop)
-
+    my_cart = Cart.objects.filter(is_deleted=False, shop=the_shop, customer=request.user, status='checkout').first()
+    cart_items = CartItem.objects.filter(cart=my_cart, is_deleted=False)
+    
     if not cart_items.exists():
         messages.error(request, "Your cart is empty.")
 
@@ -408,35 +409,50 @@ def checkout_view(request, name):
                 messages.success(request, 'Default address updated.')
                 return redirect('checkout', the_shop.name)
             case 'coupon_form':
-                coupon = get_object_or_404(Coupon, coupon_id=cpn)
-                if coupon and coupon.is_active:
-                    my_cart.coupon = coupon
-                    my_cart.save()
-                    messages.success(request, '{coupon.percent_off}% discount applied.')
-                    return redirect('checkout', the_shop.name)
+                if cpn:
+                    coupon = get_object_or_404(Coupon, coupon_id=cpn)
+                    if coupon and coupon.is_active:
+                        my_cart.coupon = coupon
+                        my_cart.save()
+                        messages.success(request, f'{coupon.percent_off}% discount applied.')
+                        return redirect('checkout', the_shop.name)
+                    elif coupon.is_active == False:
+                        messages.error(request, 'Coupon is not active.')
+                        return redirect('checkout', the_shop.name)
+                    else:
+                        messages.error(request, 'Please check coupon number.')
+                        return redirect('checkout', the_shop.name)
                 else:
-                    messages.error(request, 'Please check coupon number.')
                     return redirect('checkout', the_shop.name)
-            case 'checkout':
-                delivery, created = Delivery.objects.get_or_create(username=request.user, shop=the_shop)
-                delivery.note = my_cart.note
-                delivery.town = my_cart.town
-                delivery.save()
-                for i in cart_items:
-                    # product = get_object_or_404(shop=the_shop, product=cart_items.product.product)
-                    DeliveryItem.objects.create(
-                        delivery = delivery,
-                        product = cart_item.product,
-                        quantity = cart_item.quantity
-                    )
-                cart_items.update(status='checked_out', checked_out=datetime.now())
-                messages.success(request, f"Check out completed.")
+            case 'order_btn':
+                with transaction.atomic():
+                    p_method = get_object_or_404(PaymentMethod, shop=the_shop, id=payment_method)
+                    # Create or get the delivery
+                    delivery = Delivery.objects.create(username=request.user, shop=the_shop)
+                    delivery.note = my_cart.note
+                    delivery.town = my_cart.town.town
+                    delivery.address = default_addr
+                    delivery.payment_method = p_method
+                    delivery.total = my_cart.total_price
+                    delivery.source = 'cart'
+                    delivery.save()
+
+                    # Add items to the delivery
+                    for i in cart_items:
+                        product = get_object_or_404(Inventory, shop=the_shop, id=i.product.id)
+                        DeliveryItem.objects.create(
+                            delivery = delivery,
+                            product = product,
+                            quantity = i.quantity
+                        )
+
+                    # Update cart status
+                    my_cart.status = 'checked_out'
+                    my_cart.checked_out = datetime.now()
+                    my_cart.save()
+
+                messages.success(request, 'Check out completed.')
                 return redirect('shop', name=the_shop)
-    
-    try:
-        default_addr = addresses.get(is_default=True)
-    except Exception:
-        default_addr = None
 
     context = {
         'the_shop': the_shop,
@@ -453,10 +469,7 @@ def checkout_view(request, name):
 @login_required
 def history_view(request, name):
     the_shop = get_shop(name)
-    orders = Delivery.objects.filter(shop=the_shop, username=request.user).values(
-        'order_number', 'status'
-    ).annotate(total=Sum('total'), count=Count('id'))
-
+    orders = Delivery.objects.filter(shop=the_shop, username=request.user).exclude(status='processing')
     context = {'the_shop': the_shop, 'orders': orders}
     return render(request, 'shop/history.html', context)
 
@@ -465,8 +478,19 @@ def history_view(request, name):
 @login_required
 def order_details_view(request, name, order_id):
     the_shop = get_shop(name)
-    orders = Delivery.objects.filter(shop=the_shop, order_number=order_id)
-    context = {'the_shop': the_shop, 'orders': orders}
+    order = get_object_or_404(Delivery, id=order_id)
+    orders = DeliveryItem.objects.filter(delivery=order)
+    address = Address.objects.filter(shop=the_shop, user=request.user, is_default=True).first()
+    shipping = get_object_or_404(TownsShipped, shop=the_shop, town=order.town)
+    total_amnt = float(shipping.price) + float(order.total)
+    context = {
+        'the_shop': the_shop, 
+        'order': order,
+        'orders': orders,
+        'address': address,
+        'shipping': shipping,
+        'total_amnt': total_amnt,
+    }
     return render(request, 'shop/order_details.html', context)
 
 
@@ -505,16 +529,17 @@ def categories_view(request, name):
     }
     return render(request, 'shop/categories.html', context)
 
-@login_required
-def products_view2(request, name, category):
-    the_shop = get_shop(name)
-    category_instance = get_object_or_404(Category, shop=the_shop, category=category)
-    products = Inventory.objects.filter(shop=the_shop, category=category_instance, status='available')
-    context = {
-        'products': products,
-        'the_shop': the_shop,
-    }
-    return render(request, 'shop/products.html', context)
+
+# @login_required
+# def products_view2(request, name, category):
+#    the_shop = get_shop(name)
+#    category_instance = get_object_or_404(Category, shop=the_shop, category=category)
+#    products = Inventory.objects.filter(shop=the_shop, category=category_instance, status='available')
+#    context = {
+#        'products': products,
+#        'the_shop': the_shop,
+#    }
+#    return render(request, 'shop/products.html', context)
 
 
 @login_required

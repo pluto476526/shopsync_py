@@ -1,5 +1,6 @@
 {% extends 'dash/main.html' %}
 {% load static %}
+{% load humanize %}
 {% block main %}
 <div class="content-wrapper">
   <div class="row">
@@ -86,39 +87,41 @@
                     <table class="table table-hover">
                       <thead>
                         <tr>
-                          <th>Order Number</th>
-                          <th>Item Count</th>
+                          <th>Order ID</th>
+                          <th>Username</th>
+                          <th>Placed on</th>
                           <th>Total Amount</th>
                           <th></th>
                         </tr>
                       </thead>
                       <tbody>
-                        {% for product in confirmed_deliveries %}
+                        {% for o in confirmed_deliveries %}
                         <tr>
-                          <td>{{ product.order_number }}</td>
-                          <td>{{ product.item_count }}</td>
-                          <td>KSH. {{ product.total_amount }}</td>
+                          <td>{{ o.order_number }}</td>
+                          <td>{{ o.username|title }}</td>
+                          <td>{{ o.timestamp }}</td>
+                          <td>KSH. {{ o.total|intcomma }}</td>
                           <!-- <td class="text-success"> 98.05% <i class="ti-arrow-up"></i></td> -->
                           <td
                             class="d-flex justify-content-start"
                             style="gap: 3px"
                           >
                             <a
-                              href="{% url 'order_details' product.order_number %}"
+                              href="{% url 'order_details' o.order_number %}"
                               ><span class="badge badge-info">View</span></a
                             >
                             <button
                               class="badge badge-info"
                               type="button"
                               data-bs-toggle="modal"
-                              data-bs-target="#assMultModal{{ product.order_number }}"
+                              data-bs-target="#assMultModal{{ o.order_number }}"
                             >
                               Confirm
                             </button>
                             <!-- View product Modal -->
                             <div
                               class="modal fade"
-                              id="assMultModal{{ product.order_number }}"
+                              id="assMultModal{{ o.order_number }}"
                               tabindex="-1"
                             >
                               <div class="modal-dialog">
@@ -148,8 +151,8 @@
                                               ------------------------
                                             </option>
                                             {% for driver in my_drivers %}
-                                            <option value="{{ driver.name }}">
-                                              {{ driver.name|title }}
+                                            <option value="{{ driver.id }}">
+                                              {{ driver.user.username|title }}
                                             </option>
                                             {% endfor %}
                                           </select>
@@ -159,12 +162,12 @@
                                       <input
                                         type="hidden"
                                         name="source"
-                                        value="assign_multiple"
+                                        value="assign_driver"
                                       />
                                       <input
                                         type="hidden"
                                         name="order_number"
-                                        value="{{ product.order_number }}"
+                                        value="{{ o.order_number }}"
                                       />
                                       <div class="modal-footer">
                                         <button
@@ -213,7 +216,7 @@
                     class="d-sm-flex justify-content-between align-items-start"
                   >
                     <div>
-                      <h4 class="card-title">Deliveries in Transit</h4>
+                      <h4 class="card-title">Shipped Deliveries</h4>
                       <p class="card-description">
                         View and manage delivery requests that have been
                         processed and are already in transit.
@@ -221,29 +224,31 @@
                     </div>
                   </div>
                   <div class="table-responsive">
-                    {% if deliveries_in_transit %}
+                    {% if shipped_deliveries %}
                     <table class="table table-hover">
                       <thead>
                         <tr>
-                          <th>Order Number</th>
-                          <th>Item Count</th>
+                          <th>Order ID</th>
+                          <th>Username</th>
+                          <th>Placed on</th>
                           <th>Total Amount</th>
                           <th></th>
                         </tr>
                       </thead>
                       <tbody>
-                        {% for product in deliveries_in_transit %}
+                        {% for o in shipped_deliveries %}
                         <tr>
-                          <td>{{ product.order_number }}</td>
-                          <td>{{ product.item_count }}</td>
-                          <td>KSH. {{ product.total_amount }}</td>
+                          <td>{{ o.order_number }}</td>
+                          <td>{{ o.username|title }}</td>
+                          <td>{{ o.timestamp }}</td>
+                          <td>KSH. {{ o.total|title }}</td>
                           <!-- <td class="text-success"> 98.05% <i class="ti-arrow-up"></i></td> -->
                           <td
                             class="d-flex justify-content-start"
                             style="gap: 3px"
                           >
                             <a
-                              href="{% url 'order_details' product.order_number %}"
+                              href="{% url 'order_details' o.order_number %}"
                               ><span class="badge badge-info">View</span></a
                             >
                             <form action="" method="post">
@@ -251,12 +256,12 @@
                               <input
                                 type="hidden"
                                 name="order_number"
-                                value="{{ product.order_number }}"
+                                value="{{ o.order_number }}"
                               />
                               <input
                                 type="hidden"
                                 name="source"
-                                value="complete_multiple"
+                                value="complete_order"
                               />
                               <button class="badge badge-info" type="submit">
                                 Complete
@@ -298,22 +303,24 @@
                     <table class="table table-hover">
                       <thead>
                         <tr>
-                          <th>Order Number</th>
-                          <th>Item Count</th>
+                          <th>Order ID</th>
+                          <th>Username</th>
+                          <th>Placed on</th>
                           <th>Total Amount</th>
                           <th></th>
                         </tr>
                       </thead>
                       <tbody>
-                        {% for product in completed_deliveries %}
+                        {% for o in completed_deliveries %}
                         <tr>
-                          <td>{{ product.order_number }}</td>
-                          <td>{{ product.item_count }}</td>
-                          <td>KSH. {{ product.total_amount }}</td>
+                          <td>{{ o.order_number }}</td>
+                          <td>{{ o.username|title }}</td>
+                          <td>{{ o.timestamp }}</td>
+                          <td>KSH. {{ o.total|intcomma }}</td>
                           <!-- <td class="text-success"> 98.05% <i class="ti-arrow-up"></i></td> -->
                           <td>
                             <a
-                              href="{% url 'order_details' product.order_number %}"
+                              href="{% url 'order_details' o.order_number %}"
                               ><span class="badge badge-info">View</span></a
                             >
                           </td>

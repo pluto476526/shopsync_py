@@ -18,9 +18,9 @@ class Shop(models.Model):
     shopID = models.CharField(max_length=10, unique=True, null=True)
     bio = models.TextField(blank=True, null=True)
     logo = models.ImageField(default='logo.jpg')
-    dp1 = models.ImageField(default='dp1.jpg')
-    dp2 = models.ImageField(default='dp2.jpg')
-    dp3 = models.ImageField(default='dp3.jpg')
+    avatar1 = models.ImageField(default='shop1.jpg')
+    avatar2 = models.ImageField(default='shop2.jpg')
+    avatar3 = models.ImageField(default='shop13.jpg')
     title1 = models.CharField(max_length=50, default='Find Top Brands.')
     title2 = models.CharField(max_length=50, default='Exceptional Quality.')
     title3 = models.CharField(max_length=50, default='Shop With Ease')
@@ -70,17 +70,17 @@ class Shop(models.Model):
 class Cart(models.Model):
     shop = models.ForeignKey('shop.Shop', on_delete=models.CASCADE)
     customer = models.ForeignKey('auth.User', on_delete=models.CASCADE)
-    cart_id = models.CharField(max_length=10, unique=True)
+    status = models.CharField(max_length=20, default='processing')
     town = models.ForeignKey('shop.TownsShipped', on_delete=models.SET_NULL, null=True)
     note = models.CharField(max_length=200, null=True, blank=True)
     timestamp = models.DateTimeField(auto_now_add=True)
     checked_out = models.DateTimeField(blank=True, null=True)
-    is_deleted = models.BooleanField(default=False)
     coupon = models.ForeignKey('dash.Coupon', on_delete=models.SET_NULL, blank=True, null=True)
     discount = models.PositiveIntegerField(default=0)
-    
+    is_deleted = models.BooleanField(default=False)
+
     def __str__(self):
-        return f"{self.customer.username}'s cart: {self.cart_id}"
+        return f"{self.customer.username}'s cart"
     
     @property
     def original_price(self):
@@ -102,10 +102,9 @@ class Cart(models.Model):
  
 class CartItem(models.Model):
     cart = models.ForeignKey('shop.Cart', on_delete=models.CASCADE, related_name='items')
-    product = models.ForeignKey('dash.Inventory', on_delete=models.CASCADE)
+    product = models.ForeignKey('dash.Inventory', on_delete=models.CASCADE, related_name='products')
     quantity = models.PositiveIntegerField()
     total = models.DecimalField(max_digits=10, decimal_places=2)
-    status = models.CharField(max_length=20, default='pending')
     is_deleted = models.BooleanField(default=False)
     
     def save(self, *args, **kwargs):
@@ -114,7 +113,7 @@ class CartItem(models.Model):
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"{self.quantity} x {self.product.name} in {self.cart.cart_id}"
+        return f"{self.quantity} x {self.product.product} in {self.cart.id}"
 
 
 class ShopHelpDesk(models.Model):
@@ -160,5 +159,5 @@ class Address(models.Model):
     is_default = models.BooleanField(default=False)
     is_deleted = models.BooleanField(default=False)
 
-    def __str__():
-       return f'{self.user}: {self.shop}'
+    def __str__(self):
+       return f'{self.user}: {self.id}'

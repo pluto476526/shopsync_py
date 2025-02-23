@@ -89,7 +89,7 @@ class Inventory(models.Model):
     price = models.PositiveIntegerField(default=0)
     units = models.ForeignKey('dash.Units', on_delete=models.SET_NULL, null=True)
     quantity = models.PositiveIntegerField(default=0)
-    status = models.CharField(max_length=20, default='available')
+    status = models.CharField(max_length=20, default='available') # available
     is_featured = models.BooleanField(default=False)
     timestamp = models.DateTimeField(auto_now_add=True)
     in_deals = models.BooleanField(default=False)
@@ -138,58 +138,58 @@ class PaymentMethod(models.Model):
         return f'{self.shop}: {self.method}'
 
 
+
 class Delivery(models.Model):
     shop = models.ForeignKey('shop.Shop', on_delete=models.CASCADE)
     username = models.ForeignKey('auth.User', on_delete=models.SET_NULL, blank=True, null=True, related_name='customer')
     unregistered_user = models.CharField(max_length=50, blank=True, null=True)
-    order_number = models.CharField(max_length=10)
-    discount = models.IntegerField(default=0)
+    order_number = models.CharField(max_length=10, blank=True, null=True)
+    avatar = models.ImageField(default='shop1.jpg')
     timestamp = models.DateTimeField(auto_now_add=True)
     time_confirmed = models.DateTimeField(blank=True, null=True)
-    time_in_transit = models.DateTimeField(blank=True, null=True)
+    time_shipped = models.DateTimeField(blank=True, null=True)
     time_completed = models.DateTimeField(blank=True, null=True)
     phone = models.CharField(max_length=15, blank=True, null=True)
     email = models.EmailField(unique=False, blank=True, null=True)
+    town = models.CharField(max_length=20, null=True, blank=True)
     address = models.ForeignKey('shop.Address', on_delete=models.SET_NULL, blank=True, null=True)
     payment_method = models.ForeignKey('dash.PaymentMethod', on_delete=models.SET_NULL, blank=True, null=True)
     admin = models.ForeignKey('auth.User', on_delete=models.SET_NULL, blank=True, null=True, related_name='admin')
     driver = models.ForeignKey('dash.Profile', on_delete=models.SET_NULL, blank=True, null=True, related_name='staff')
     note = models.TextField(blank=True, null=True)
-    source = models.CharField(max_length=10, default='dash')
+    source = models.CharField(max_length=10, default='dash') # dash, cart
     is_deleted = models.BooleanField(default=False)
-    status = models.CharField(max_length=20, default='processing')
-    
+    status = models.CharField(max_length=20, default='processing') # processing, confirmed, shipped, completed
+    total = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+
     def __str__(self):
-        return f'{self.shop}: {self.order_number}'
-
-    @property
-    def total_price(self):
-        """Calculate the total price for all item"""
-        return sum(item.total for item in self.items.all())
-
+        return f"{self.username}'s delivery"
+    
     def save(self, *args, **kwargs):
         if not self.order_number:
-            self.order_number = ''.join(secrets.choice(string.ascii_uppercase + string.digits) for _ in range(8))
+            self.order_number = ''.join(secrets.choice(string.ascii_uppercase + string.digits) for _ in range(10))
         super().save(*args, **kwargs)
 
-
 class DeliveryItem(models.Model):
-    delivery = models.ForeignKey('dash.Delivery', on_delete=models.SET_NULL, null=True, related_name='items')
+    delivery = models.ForeignKey('dash.Delivery', on_delete=models.CASCADE, related_name='items', null=True)
     product = models.ForeignKey('dash.Inventory', on_delete=models.SET_NULL, null=True)
     quantity = models.PositiveIntegerField()
     total = models.DecimalField(max_digits=10, decimal_places=2)
 
     def save(self, *args, **kwargs):
         """Automatically calculate the total price of the item"""
-        self.total = self.product.price * self.quantity
+        if self.product:
+            self.total = self.product.price * self.quantity
         super().save(*args, **kwargs)
-    
+
+    def __str__(self):
+        return f'{self.product} x {self.quantity} (Total: {self.total})'
 
 class Coupon(models.Model):
     shop = models.ForeignKey('shop.Shop', on_delete=models.CASCADE)
     percent_off = models.PositiveIntegerField()
     coupon_id = models.CharField(max_length=11, unique=True)
-    status = models.CharField(max_length=10, default='active')
+    status = models.CharField(max_length=10, default='active') # active, inactive
     timestamp = models.DateTimeField(auto_now_add=True)
     total_sales = models.PositiveIntegerField(default=0)
     is_active = models.BooleanField(default=True)
@@ -213,7 +213,7 @@ class TodaysDeal(models.Model):
     price = models.PositiveIntegerField(default=0)
     discount = models.PositiveIntegerField(default=0)
     time = models.DateTimeField(null=True)
-    status = models.CharField(max_length=10, default='active')
+    status = models.CharField(max_length=10, default='active') # active, inactive
     timestamp = models.DateTimeField(auto_now_add=True)
     total_sales = models.PositiveIntegerField(default=0)
     is_deleted = models.BooleanField(default=False)

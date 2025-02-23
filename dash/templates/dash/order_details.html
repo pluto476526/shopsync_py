@@ -9,7 +9,7 @@
                 <div class="card-body">
                     <div class="d-sm-flex justify-content-between align-items-start">
                         <div>
-                            <h4 class="card-title">Order Details</h4>
+                            <h5 class="card-title">Order ID: {{ order.order_number }}</h5>
                             <p class="card-description">
                                 A quick summary of the order
                             </p>
@@ -24,7 +24,6 @@
                                     <th>Price Per Unit</th>
                                     <th>Quantity</th>
                                     <th>Total</th>
-                                    <th></th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -32,151 +31,10 @@
                                 {% for product in orders %}
                                 <tr>
                                     <td>{{ product.product.product|capfirst }}</td>
-                                    <td>{{ product.category.category|capfirst }}</td>
-                                    <td>KSH. {{ product.price|intcomma }} per {{ product.units.units }}</td>
-                                    <td>{{ product.quantity|intcomma }} {{ product.units.units }}</td>
+                                    <td>{{ product.product.category.category|capfirst }}</td>
+                                    <td>KSH. {{ product.product.price|intcomma }} per {{ product.product.units.units }}</td>
+                                    <td>{{ product.quantity|intcomma }} {{ product.product.units.units }}</td>
                                     <td>KSH. {{ product.total|intcomma }}</td>
-                                    <td class="d-flex justify-content-start">
-                                        <button class="badge badge-info" type="button" data-bs-toggle="modal"
-                                            data-bs-target="#viewOrderModal{{ product.id }}">View</button>
-                                        <!-- View product Modal -->
-                                        <div class="modal fade" id="viewOrderModal{{ product.id }}" tabindex="-1">
-                                            <div class="modal-dialog">
-                                                <div class="modal-content">
-                                                    <div class="modal-header">
-                                                        <h5 class="modal-title">Delivery Request Form
-                                                        </h5>
-                                                        <button type="button" class="btn-close" data-bs-dismiss="modal"
-                                                            aria-label="Close"></button>
-                                                    </div>
-                                                    <div class="modal-body">
-                                                        <!-- Floating Labels Form -->
-                                                        <form class="row g-3" method="post">
-                                                            {% csrf_token %}
-                                                            {% if product.username %}
-                                                            <div class="col-md-12">
-                                                                <div class="form-floating">
-                                                                    <input type="text" class="form-control"
-                                                                        value="{{ product.username.username|title }}"
-                                                                        readonly>
-                                                                    <label>Customer Name</label>
-                                                                </div>
-                                                            </div>
-                                                            {% elif product.unregistered_user %}
-                                                            <div class="col-md-12">
-                                                                <div class="form-floating">
-                                                                    <input type="text" class="form-control"
-                                                                        value="{{ product.unregistered_user|title }}"
-                                                                        readonly>
-                                                                    <label>Customer Name</label>
-                                                                </div>
-                                                            </div>
-                                                            {% endif %}
-                                                            <div class="col-md-12">
-                                                                <div class="form-floating">
-                                                                    <input type="text" class="form-control"
-                                                                        value="{{ product.phone }}" readonly>
-                                                                    <label>Phone Number</label>
-                                                                </div>
-                                                            </div>
-                                                            {% if product.email %}
-                                                            <div class="col-md-12">
-                                                                <div class="form-floating">
-                                                                    <input type="text" class="form-control"
-                                                                        value="{{ product.email }}" readonly>
-                                                                    <label>Email Address</label>
-                                                                </div>
-                                                            </div>
-                                                            {% endif %}
-                                                            <div class="col-md-6">
-                                                                <div class="form-floating">
-                                                                    <input type="text" class="form-control"
-                                                                        value="{{ product.county|title }}" readonly>
-                                                                    <label>County</label>
-                                                                </div>
-                                                            </div>
-                                                            <div class="col-md-6">
-                                                                <div class="form-floating">
-                                                                    <input type="text" class="form-control"
-                                                                        value="{{ product.town|title }}" readonly>
-                                                                    <label>Town</label>
-                                                                </div>
-                                                            </div>
-                                                            {% if product.address %}
-                                                            <div class="col-md-12">
-                                                                <div class="form-floating">
-                                                                    <input type="text" class="form-control"
-                                                                        value="{{ product.address }}" readonly>
-                                                                    <label>Delivery Address</label>
-                                                                </div>
-                                                            </div>
-                                                            {% endif %}
-                                                            <div class="col-md-12">
-                                                                <div class="form-floating">
-                                                                    <input type="text" class="form-control"
-                                                                        value="{{ product.product.product|title }}" readonly>
-                                                                    <label>Product</label>
-                                                                </div>
-                                                            </div>
-                                                            <div class="col-md-12">
-                                                                <div class="form-floating">
-                                                                    <input type="text" class="form-control"
-                                                                        value="{{ product.category.category|title }}"
-                                                                        readonly>
-                                                                    <label>Category</label>
-                                                                </div>
-                                                            </div>
-                                                            <div class="col-md-6">
-                                                                <div class="form-floating">
-                                                                    <input type="number" class="form-control"
-                                                                        value="{{ product.quantity|intcomma }}" readonly>
-                                                                    <label>Quantity</label>
-                                                                </div>
-                                                            </div>
-                                                            <div class="col-md-6">
-                                                                <div class="form-floating">
-                                                                    <input class="form-control"
-                                                                        value="{{ product.units.units|title }}" readonly>
-                                                                    <label>Units</label>
-                                                                </div>
-                                                            </div>
-                                                            <div class="col-md-6">
-                                                                <div class="form-floating">
-                                                                    <input class="form-control"
-                                                                        value="KSH. {{ product.price|intcomma }}" readonly>
-                                                                    <label>Price Per Unit</label>
-                                                                </div>
-                                                            </div>
-                                                            <div class="col-md-6">
-                                                                <div class="form-floating">
-                                                                    <input class="form-control"
-                                                                        value="KSH. {{ product.total|intcomma }}" readonly>
-                                                                    <label>Total Bill</label>
-                                                                </div>
-                                                            </div>
-                                                            <div class="col-md-12">
-                                                                <div class="form-floating">
-                                                                    <input type="text" class="form-control"
-                                                                        value="{{ product.timestamp|timesince }} ago"
-                                                                        readonly>
-                                                                    <label>Order Placed</label>
-                                                                </div>
-                                                            </div>
-                                                            <input type="hidden" name="source" value="confirm_delivery">
-                                                            <input type="hidden" name="id" value="{{ product.id }}">
-                                                            <div class="modal-footer">
-                                                                <button type="button"
-                                                                    class="btn btn-sm btn-outline-danger"
-                                                                    data-bs-dismiss="modal">Close</button>
-                                                            </div>
-                                                        </form>
-                                                        <!-- End floating Labels Form -->
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <!-- Edit Order Modal -->
-                                    </td>
                                 </tr>
                                 {% endfor %}
                                 {% else %}

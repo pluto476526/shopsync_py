@@ -16,6 +16,7 @@ from dash.models import (
     Inventory,
     Supplier,
     Delivery,
+    DeliveryItem,
     PaymentMethod,
     Coupon,
     Profile,
@@ -269,83 +270,50 @@ def orders_view(request):
 @transaction.atomic
 def deliveries_view(request):
     shop = get_user_shop(request)
-    if not shop:
-        return redirect('error_page')
-
+    requests = Delivery.objects.filter(shop=shop, status='processing', is_deleted=False)
+    dash_requests = requests.filter(source='dash')
+    cart_requests = requests.filter(source='cart')
+    available_products = Inventory.objects.filter(shop=shop, status='available', is_deleted=False)
+    
     if request.method == 'POST':
         customer = request.POST.get('username', '').strip()
         quantity = request.POST.get('quantity')
         source = request.POST.get('source', '').strip()
-        order_id = request.POST.get('id')
+        order_id = request.POST.get('o_id')
         phone = request.POST.get('phone', '').strip()
-        order_no = request.POST.get('order_number', '').strip()
         product_id = request.POST.get('product_id')
 
-        try:
-            user = None
-            if customer:
-                user = User.objects.filter(username=customer).first()
 
-            if source == 'new_delivery':
-                selected_product = get_object_or_404(Inventory, product_id=product_id)
-                if int(quantity) <= selected_product.quantity:
-                    Delivery.objects.create(
-                        shop=shop,
-                        username=user,
-                        unregistered_user=customer,
-                        order_number=order_no,
-                        prod_id=selected_product.product_id,
-                        category=selected_product.category,
-                        product=selected_product,
-                        quantity=quantity,
-                        price=float(selected_product.price) - float(selected_product.discount),
-                        units=selected_product.units,
-                        total=(float(selected_product.price) - float(selected_product.discount)) * float(quantity),
-                        phone=phone,
-                    )
-                    selected_product.quantity -= int(quantity)
-                    selected_product.save()
-                    messages.success(request, f"Delivery for {quantity} {selected_product.units} of {selected_product.product} created.")
-                else:
-                    messages.error(request, f"Only {selected_product.quantity} {selected_product.units} available.")
-            elif source == 'confirm_delivery':
+        if source == 'new_delivery':
+            selected_product = get_object_or_404(Inventory, product_id=product_id)
+
+            if int(quantity) <= selected_product.quantity:
+                Delivery.objects.create(
+                    shop=shop,
+                    unregistered_user=customer,
+                )
+                selected_product.quantity -= int(quantity)
+                selected_product.save()
+                messages.success(request, f"Delivery for {quantity} {selected_product.units} of {selected_product.product} created.")
+                return redirect('deliveries')
+            else:
+                messages.error(request, f"Only {selected_product.quantity} {selected_product.units} available.")
+                return redirect('deliveries')
+        elif source == 'confirm_delivery':
+            with transaction.atomic():
                 delivery = get_object_or_404(Delivery, id=order_id)
                 delivery.status = 'confirmed'
                 delivery.time_confirmed = datetime.now()
                 delivery.admin = request.user
                 delivery.save()
-                sale_category = get_object_or_404(Category, category=delivery.category.category)
-                sale_category.total_sales += delivery.total
-                sale_category.save()
+                # sale_category = get_object_or_404(Category, category=delivery.category.category)
+                # sale_category.total_sales += delivery.total
+                # sale_category.save()
                 shop.total_sales += delivery.total
                 shop.save()
-                messages.success(request, f"Delivery for {delivery.quantity} {delivery.product.product} confirmed.")
-            elif source == 'confirm_multiple':
-                mult_orders = Delivery.objects.filter(order_number=order_no)
-                mult_orders.update(status='confirmed', time_confirmed=datetime.now(), admin=request.user)
-                for o in mult_orders:
-                    logger.debug(o)
-                    category = get_object_or_404(Category, category=o.category.category)
-                    category.total_sales += o.total
-                    category.save()
-                    shop.total_sales += o.total
-                    shop.save()
-                messages.success(request, f"Order #{order_no} confirmed.")
-
-        except Exception as e:
-            logger.error(f"Error processing delivery: {e}")
-            messages.error(request, "Failed to process the delivery.")
-
-        return redirect('deliveries')
-
-    requests = Delivery.objects.filter(shop=shop, status='processing')
-    dash_requests = requests.filter(source='dash')
-    cart_requests = requests.filter(source='cart').values('order_number', 'status').annotate(
-        total_quantity=models.Sum('quantity'),
-        total_price=models.Sum('price'),
-        item_count=models.Count('id')
-    )
-    available_products = Inventory.objects.filter(shop=shop, status='available')
+                messages.success(request, f'Delivery {delivery.order_number} confirmed.')
+                return redirect('deliveries')
+    
     context = {
         'available_products': available_products,
         'dash_requests': dash_requests,
@@ -357,64 +325,46 @@ def deliveries_view(request):
 @transaction.atomic
 def confirmed_deliveries_view(request):
     shop = get_user_shop(request)
-    if not shop:
-        return redirect('error_page')
+    all_deliveries = Delivery.objects.filter(shop=shop)
+    confirmed_deliveries = all_deliveries.filter(status='confirmed')
+    shipped_deliveries = all_deliveries.filter(status='shipped')
+    completed_deliveries = all_deliveries.filter(status='completed')
+    role = get_object_or_404(Role, shop=shop, role_name='driver')
+    my_drivers = Profile.objects.filter(role=role)
 
     if request.method == 'POST':
         address = request.POST.get('address', '').strip()
         source = request.POST.get('source', '').strip()
         order_id = request.POST.get('id')
-        driver_name = request.POST.get('driver', '').strip()
+        driver_id = request.POST.get('driver', '').strip()
         order_no = request.POST.get('order_number', '').strip()
 
         try:
             with transaction.atomic():
-                driver = None
-                if driver_name:
-                    driver, created = User.objects.get_or_create(username=driver_name)
-                    if created:
-                        messages.info(request, f"Driver {driver_name} created.")
-
-                if source == 'assign_multiple':
-                    mult_orders = Delivery.objects.filter(order_number=order_no)
-                    if address:
-                        for order in mult_orders:
-                            order.address = address
-                    mult_orders.update(
-                        status='in_transit',
-                        time_in_transit=datetime.now(),
-                        driver=driver,
-                        admin=request.user
-                    )
-                    messages.success(request, f"Delivery #{order_no} assigned to {driver}.")
-                elif source == 'complete_multiple':
-                    Delivery.objects.filter(order_number=order_no).update(
-                        status='completed',
-                        time_completed=datetime.now(),
-                        admin=request.user
-                    )
-                    messages.success(request, f"Order #{order_no} marked as completed.")
+                if source == 'assign_driver':
+                    driver = get_object_or_404(Profile, id=driver_id)
+                    order = get_object_or_404(Delivery, order_number=order_no)
+                    order.status = 'shipped'
+                    order.time_shipped = datetime.now()
+                    order.driver = driver
+                    order.admin = request.user
+                    order.save()
+                    messages.success(request, f"Delivery #{order_no} assigned to {driver.user.username}.")
+                elif source == 'complete_order':
+                    order = get_object_or_404(Delivery, order_number=order_no)
+                    order.status = 'completed'
+                    order.time_completed = datetime.now()
+                    order.admin = request.user
+                    order.save()
+                    messages.success(request, f"Delivery #{order_no} marked as completed.")
         except Exception as e:
-            messages.error(request, f"Error processing delivery: {e}")
+            logger.error(f"Error processing delivery: {e}")
+            messages.error(request, 'Error processing delivery.')
         return redirect('confirmed_deliveries')
 
-    all_deliveries = Delivery.objects.filter(shop=shop)
-    confirmed_deliveries = all_deliveries.filter(status='confirmed').values('order_number').annotate(
-        total_amount=models.Sum('total'),
-        item_count=models.Count('id')
-    )
-    in_transit = all_deliveries.filter(status='in_transit').values('order_number').annotate(
-        total_amount=models.Sum('total'),
-        item_count=models.Count('id')
-    )
-    completed_deliveries = all_deliveries.filter(status='completed').values('order_number').annotate(
-        total_amount=models.Sum('total'),
-        item_count=models.Count('id')
-    )
-    my_drivers = User.objects.filter(groups__name='Drivers'),  # Assuming a Driver group exists.
     context = {
         'confirmed_deliveries': confirmed_deliveries,
-        'deliveries_in_transit': in_transit,
+        'shipped_deliveries': shipped_deliveries,
         'completed_deliveries': completed_deliveries,
         'my_drivers': my_drivers,
     }
@@ -426,11 +376,16 @@ def track_order_view(request):
 
 
 def order_details_view(request, order_id):
-    orders = Delivery.objects.filter(order_number=order_id)
+    order = get_object_or_404(Delivery, order_number=order_id)
+    orders = DeliveryItem.objects.filter(delivery=order)
     if not orders.exists():
         messages.error(request, f"No orders found for Order ID {order_id}.")
         return redirect('orders')
-    return render(request, 'dash/order_details.html', {'orders': orders})
+    context = {
+        'order': order,
+        'orders': orders,
+    }
+    return render(request, 'dash/order_details.html', context)
 
 
 def online_sales_view(request):

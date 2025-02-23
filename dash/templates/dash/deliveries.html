@@ -32,7 +32,8 @@
             </li>
           </ul>
         </div>
-        {% if messages %} {% for message in messages %}
+        {% if messages %}
+        {% for message in messages %}
         <div
           class="alert alert-info alert-dismissible fade show mt-2"
           role="alert"
@@ -45,7 +46,8 @@
             aria-label="Close"
           ></button>
         </div>
-        {% endfor %} {% endif %}
+        {% endfor %}
+        {% endif %}
         <div class="tab-content tab-content-basic">
           <div
             class="tab-pane fade show active"
@@ -65,241 +67,45 @@
                         View and manage requests made from the dashboard.
                       </p>
                     </div>
-                    <div>
-                      <button
-                        class="btn btn-primary btn-sm text-white mb-0 me-0"
-                        type="button"
-                        data-bs-toggle="modal"
-                        data-bs-target="#newDeliveryModal"
-                      >
-                        <i class="mdi mdi-account-plus"></i>
-                        New Delivery
-                      </button>
-                    </div>
                   </div>
                   <div class="table-responsive">
                     <table class="table table-hover">
                       <thead>
                         <tr>
-                          <th>Order Number</th>
-                          <th>Product</th>
-                          <th>Quantity</th>
-                          <th>Price Per Unit</th>
+                          <th>Order ID</th>
+                          <th>Username</th>
+                          <th>Placed on</th>
                           <th>Total</th>
                           <th></th>
                         </tr>
                       </thead>
                       <tbody>
                         {% if dash_requests %}
-                        {% for product in dash_requests %}
+                        {% for o in dash_requests %}
                         <tr>
-                          <td>{{ product.order_number }}</td>
-                          <td>{{ product.product.product|capfirst }}</td>
-                          <td>{{ product.quantity }} {{ product.units }}</td>
-                          <td>KSH. {{ product.price|intcomma }}</td>
-                          <td>KSH. {{ product.total|intcomma }}</td>
+                          <td>{{ o.order_number }}</td>
+                          <td>{{ o.username|capfirst }}</td>
+                          <td>{{ o.timestamp }}</td>
+                          <td>KSH. {{ o.total|intcomma }}</td>
                           <!-- <td class="text-success"> 98.05% <i class="ti-arrow-up"></i></td> -->
-                          <td
-                            class="d-flex justify-content-start"
-                            style="gap: 3px"
-                          >
-                            <button
-                              class="badge badge-info"
-                              type="button"
-                              data-bs-toggle="modal"
-                              data-bs-target="#viewDeliveryModal{{ product.id }}"
-                            >
-                              View
-                            </button>
+                          <td class="d-flex justify-content-start"
+                            style="gap: 3px">
+                          <a href="{% url 'order_details' o.order_number %}">
+                              <span class="badge badge-info"> View </span>
+                          </a>
                             <form action="" method="post">
                               {% csrf_token %}
-                              <input
-                                type="hidden"
-                                name="id"
-                                value="{{ product.id }}"
-                              />
-                              <input
-                                type="hidden"
-                                name="source"
-                                value="confirm_delivery"
-                              />
+                              <input type="hidden" name="o_id" value="{{ o.id }}">
+                              <input type="hidden" name="source" value="confirm_delivery">
                               <button class="badge badge-success" type="submit">
                                 Confirm
                               </button>
                             </form>
-                            <!-- View product Modal -->
-                            <div
-                              class="modal fade"
-                              id="viewDeliveryModal{{ product.id }}"
-                              tabindex="-1"
-                            >
-                              <div class="modal-dialog">
-                                <div class="modal-content">
-                                  <div class="modal-header">
-                                    <h5 class="modal-title">
-                                      Delivery Request Form
-                                    </h5>
-                                    <button
-                                      type="button"
-                                      class="btn-close"
-                                      data-bs-dismiss="modal"
-                                      aria-label="Close"
-                                    ></button>
-                                  </div>
-                                  <div class="modal-body">
-                                    <!-- Floating Labels Form -->
-                                    <form class="row g-3" method="post">
-                                      {% csrf_token %} {% if product.username %}
-                                      <div class="col-md-12">
-                                        <div class="form-floating">
-                                          <input
-                                            type="text"
-                                            class="form-control"
-                                            value="{{ product.username.username|capfirst }}"
-                                            readonly
-                                          />
-                                          <label>Customer Name</label>
-                                        </div>
-                                      </div>
-                                      {% endif %}
-                                      {% if product.unregistered_user %}
-                                      <div class="col-md-12">
-                                        <div class="form-floating">
-                                          <input
-                                            type="text"
-                                            class="form-control"
-                                            value="{{ product.unregistered_user|title }}"
-                                            readonly
-                                          />
-                                          <label>Customer Name</label>
-                                        </div>
-                                      </div>
-                                      {% endif %}
-                                      <div class="col-md-12">
-                                        <div class="form-floating">
-                                          <input
-                                            type="text"
-                                            class="form-control"
-                                            value="{{ product.phone }}"
-                                            readonly
-                                          />
-                                          <label>Phone Number</label>
-                                        </div>
-                                      </div>
-                                      <div class="col-md-12">
-                                        <div class="form-floating">
-                                          <input
-                                            type="text"
-                                            class="form-control"
-                                            value="{{ product.product.product }}"
-                                            readonly
-                                          />
-                                          <label>Product</label>
-                                        </div>
-                                      </div>
-                                      <div class="col-md-12">
-                                        <div class="form-floating">
-                                          <input
-                                            type="text"
-                                            class="form-control"
-                                            value="{{ product.category.category }}"
-                                            readonly
-                                          />
-                                          <label>Category</label>
-                                        </div>
-                                      </div>
-                                      <div class="col-md-6">
-                                        <div class="form-floating">
-                                          <input
-                                            type="number"
-                                            class="form-control"
-                                            value="{{ product.quantity }}"
-                                            readonly
-                                          />
-                                          <label>Quantity</label>
-                                        </div>
-                                      </div>
-                                      <div class="col-md-6">
-                                        <div class="form-floating">
-                                          <input
-                                            class="form-control"
-                                            value="{{ product.units }}"
-                                            readonly
-                                          />
-                                          <label>Units</label>
-                                        </div>
-                                      </div>
-                                      <div class="col-md-6">
-                                        <div class="form-floating">
-                                          <input
-                                            class="form-control"
-                                            value="KSH. {{ product.price }}"
-                                            readonly
-                                          />
-                                          <label>Price Per Unit</label>
-                                        </div>
-                                      </div>
-                                      <div class="col-md-6">
-                                        <div class="form-floating">
-                                          <input
-                                            class="form-control"
-                                            value="KSH. {{ product.total }}"
-                                            readonly
-                                          />
-                                          <label>Total Bill</label>
-                                        </div>
-                                      </div>
-                                      <div class="col-md-12">
-                                        <div class="form-floating">
-                                          <input
-                                            type="text"
-                                            class="form-control"
-                                            value="{{ product.timestamp|timesince }} ago"
-                                            readonly
-                                          />
-                                          <label>Created On</label>
-                                        </div>
-                                      </div>
-                                      <input
-                                        type="hidden"
-                                        name="source"
-                                        value="confirm_delivery"
-                                      />
-                                      <input
-                                        type="hidden"
-                                        name="id"
-                                        value="{{ product.id }}"
-                                      />
-                                      <div class="modal-footer">
-                                        <button
-                                          type="button"
-                                          class="btn btn-sm btn-outline-danger"
-                                          data-bs-dismiss="modal"
-                                        >
-                                          Close
-                                        </button>
-                                        <button
-                                          type="submit"
-                                          class="btn btn-sm btn-outline-success"
-                                        >
-                                          Confirm Request
-                                        </button>
-                                      </div>
-                                    </form>
-                                    <!-- End floating Labels Form -->
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                            <!-- Edit Product Modal -->
                             <button class="badge badge-danger">Delete</button>
                           </td>
                         </tr>
                         {% endfor %} {% else %}
-                        <div
-                          class="alert alert-info alert-dismissible fade show"
-                          role="alert"
-                        >
+                        <div class="alert alert-info alert-dismissible fade show" role="alert">
                           <i class="bi bi-info-circle me-1"></i>
                           No Data
                         </div>
@@ -320,9 +126,7 @@
             <div class="col-sm-12 grid-margin stretch-card">
               <div class="card">
                 <div class="card-body">
-                  <div
-                    class="d-sm-flex justify-content-between align-items-start"
-                  >
+                  <div class="d-sm-flex justify-content-between align-items-start">
                     <div>
                       <h4 class="card-title">Pending Delivery Requests</h4>
                       <p class="card-description">
@@ -334,52 +138,40 @@
                     <table class="table table-hover">
                       <thead>
                         <tr>
-                          <th>Order Number</th>
-                          <th>Item Count</th>
-                          <th>Total Price</th>
+                          <th>Order ID</th>
+                          <th>Username</th>
+                          <th>Placed on</th>
+                          <th>Total</th>
                           <th></th>
                         </tr>
                       </thead>
                       <tbody>
-                        {% if cart_requests %} {% for order in cart_requests %}
+                        {% if cart_requests %}
+                        {% for order in cart_requests %}
                         <tr>
                           <td>{{ order.order_number }}</td>
-                          <td>{{ order.item_count }}</td>
-                          <td>KSH. {{ order.total_price|intcomma }}</td>
+                          <td>{{ order.username|title }}</td>
+                          <td>{{ order.timestamp }}</td>
+                          <td>KSH. {{ order.total|intcomma }}</td>
                           <!-- <td class="text-success"> 98.05% <i class="ti-arrow-up"></i></td> -->
-                          <td
-                            class="d-flex justify-content-start"
-                            style="gap: 3px"
-                          >
-                            <a
-                              href="{% url 'order_details' order.order_number %}"
-                            >
+                          <td class="d-flex justify-content-start"
+                            style="gap: 3px">
+                            <a href="{% url 'order_details' order.order_number %}">
                               <span class="badge badge-info"> View </span>
                             </a>
                             <form action="" method="post">
                               {% csrf_token %}
-                              <input
-                                type="hidden"
-                                name="order_number"
-                                value="{{ order.order_number }}"
-                              />
-                              <input
-                                type="hidden"
-                                name="source"
-                                value="confirm_multiple"
-                              />
+                              <input type="hidden" name="o_id" value="{{ order.id }}">
+                              <input type="hidden" name="source" value="confirm_delivery">
                               <button class="badge badge-success" type="submit">
-                                Complete
+                                Confirm
                               </button>
                             </form>
                             <button class="badge badge-danger">Delete</button>
                           </td>
                         </tr>
                         {% endfor %} {% else %}
-                        <div
-                          class="alert alert-info alert-dismissible fade show"
-                          role="alert"
-                        >
+                        <div class="alert alert-info alert-dismissible fade show" role="alert">
                           <i class="bi bi-info-circle me-1"></i>
                           No Data
                         </div>
@@ -397,83 +189,4 @@
   </div>
 </div>
 <!-- content-wrapper ends -->
-<!-- New Request Modal -->
-<div class="modal fade" id="newDeliveryModal" tabindex="-1">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">Delivery Request Form</h5>
-        <button
-          type="button"
-          class="btn-close"
-          data-bs-dismiss="modal"
-          aria-label="Close"
-        ></button>
-      </div>
-      <div class="modal-body">
-        <!-- Floating Labels Form -->
-        <form class="row g-3" method="post">
-          {% csrf_token %}
-          <div class="col-md-12">
-            <div class="form-floating">
-              <input type="text" name="username" class="form-control" />
-              <label>Customer Name</label>
-            </div>
-          </div>
-          <div class="col-md-12">
-            <div class="form-floating">
-              <input type="text" name="phone" class="form-control" />
-              <label>Phone Number</label>
-            </div>
-          </div>
-          <div class="col-md-12">
-            <div class="form-floating">
-              <select name="product_id" class="form-select">
-                <option selected disabled>
-                  ----------------------------------------------------------------------
-                </option>
-                {% for pr in available_products %}
-                <option value="{{ pr.product_id }}">{{ pr.product }}</option>
-                {% endfor %}
-              </select>
-              <label>Product</label>
-            </div>
-          </div>
-          <div class="col-md-12">
-            <div class="form-floating">
-              <input type="number" name="quantity" class="form-control" />
-              <label>Quantity</label>
-            </div>
-          </div>
-          <div class="col-md-12">
-            <div class="form-floating">
-              <input type="text" name="order_number" class="form-control" />
-              <label>Order Number</label>
-            </div>
-          </div>
-          <div class="col-md-12">
-            <small>
-              **Use the same order number for multiple orders by one person
-            </small>
-          </div>
-          <input type="hidden" name="source" value="new_delivery" />
-          <div class="modal-footer">
-            <button
-              type="button"
-              class="btn btn-sm btn-outline-danger"
-              data-bs-dismiss="modal"
-            >
-              Close
-            </button>
-            <button type="submit" class="btn btn-sm btn-outline-success">
-              Add Request
-            </button>
-          </div>
-        </form>
-        <!-- End floating Labels Form -->
-      </div>
-    </div>
-  </div>
-</div>
-<!-- New Delivery Modal -->
 {% endblock %}

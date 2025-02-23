@@ -1,7 +1,5 @@
-change all description inputs to textareas
-deal with the online sales html page and view
-cols that stack on small screens
-work on the register shop process. make sure shops are not registered immediately.
-register total sales in all models
-make an error page and their views
-apply discounts for individual items in the cart
+check the cart page. the proceed to checkout part
+physical sales -->>
+    make a list of all products with a searchbox at the top
+    enable the user to edit quantities of selected products
+

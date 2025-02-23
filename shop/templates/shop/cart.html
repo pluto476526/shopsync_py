@@ -1,6 +1,5 @@
 {% extends 'shop/main.html' %}
 {% load humanize %}
-{% load math_tags %}
 {% block main %}
 
 
@@ -163,11 +162,10 @@
 
                                             <!--====== Select Box ======-->
 
-                                            <label class="gl-label" for="shipping-country">Town *</label>
+                                            <label class="gl-label" for="shipping-country">Select Town *</label>
                                                 <select class="select-box select-box--primary-style" id="shipping-country" name="town" required>
-                                                    <option>Choose Town</option>
                                                     {% for t in reg_towns %}
-                                                    <option value="{{ t.id }}" {% if shipping_cost.id == t.id %} selected {% endif %}>{{ t.town|title }} - KES. {{ t.price|intcomma }}</option>
+                                                    <option value="{{ t.id }}" {% if my_cart.town == t %} selected {% endif %}>{{ t.town|title }} - KES. {{ t.price|intcomma }}</option>
                                                     {% endfor %}
                                                 </select>
                                             <!--====== End - Select Box ======-->
@@ -226,7 +224,7 @@
                                         <div>
                                             <form method="post">
                                                 {% csrf_token %}
-                                                <input type="hidden" value="{% add cart_total shipping_cost.price 274|intcomma %}">
+                                                <input type="hidden" value="`">
                                                 <input type="hidden" name="source" value="checkout_btn">
                                                 <button class="btn btn--e-brand-b-2" type="submit"> PROCEED TO CHECKOUT</button>
                                             </form>

@@ -975,25 +975,8 @@
                                                 <!--====== Dropdown ======-->
                                                 <span class="js-menu-toggle"></span>
                                                 <ul style="width:200px">
-                                                    <li class="has-dropdown has-dropdown--ul-left-100">
-                                                        <a href="dashboard.html">Manage My Account<i class="fas fa-angle-down i-state-right u-s-m-l-6"></i></a>
-                                                        <!--====== Dropdown ======-->
-                                                        <span class="js-menu-toggle"></span>
-                                                        <ul style="width:180px">
-                                                            <li>
-                                                                <a href="dash-edit-profile.html">Edit Profile</a>
-                                                            </li>
-                                                            <li>
-                                                                <a href="dash-address-book.html">Edit Address Book</a>
-                                                            </li>
-                                                            <li>
-                                                                <a href="dash-manage-order.html">Manage Order</a>
-                                                            </li>
-                                                        </ul>
-                                                        <!--====== End - Dropdown ======-->
-                                                    </li>
                                                     <li>
-                                                        <a href="dash-my-profile.html">My Profile</a>
+                                                        <a href="dash-my-profile.html">Shop Profile</a>
                                                     </li>
                                                     <li>
                                                         <a href="{% url 'shop_addresses' the_shop.name %}">Address Book</a>
@@ -1002,7 +985,7 @@
                                                         <a href="dash-track-order.html">Track Order</a>
                                                     </li>
                                                     <li>
-                                                        <a href="dash-my-order.html">My Orders</a>
+                                                        <a href="{% url 'history' the_shop.name %}">My Orders</a>
                                                     </li>
                                                     <li>
                                                         <a href="dash-payment-option.html">My Payment Options</a>
