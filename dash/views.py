@@ -7,7 +7,7 @@ from django.contrib import messages
 from django.utils.decorators import method_decorator
 from django.views.decorators.http import require_http_methods
 from django.db import transaction, models
-from shop.models import Shop, ShopHelpDesk, TownsShipped
+from shop.models import Shop, ShopHelpDesk, CountyShipped
 from main.models import MainHelpDesk
 from datetime import datetime, timedelta, timezone
 import logging
@@ -544,8 +544,8 @@ def shop_profile_view(request):
     staff_roles = Role.objects.filter(is_deleted=False, shop=shop)
     units = Units.objects.filter(is_deleted=False, shop=shop)
     pm_methods = PaymentMethod.objects.filter(is_deleted=False, shop=shop)
-    reg_towns = TownsShipped.objects.filter(is_deleted=False, shop=shop)
-
+    counties = CountyShipped.objects.filter(is_deleted=False, shop=shop)
+    
     try:
         threshold = get_object_or_404(LowStockThreshold, shop=shop)
     except Exception:
@@ -570,7 +570,7 @@ def shop_profile_view(request):
         new_units = request.POST.get('units', '').strip()
         ls_threshold = request.POST.get('ls_threshold', '').strip()
         new_pm_method = request.POST.get('p_mthd')
-        town = request.POST.get('town', '').strip()
+        county = request.POST.get('county', '').strip()
         shipping_cost = request.POST.get('shipping_cost', '').strip()
         source = request.POST.get('source', '').strip()
 
@@ -621,9 +621,9 @@ def shop_profile_view(request):
                         LowStockThreshold.objects.create(shop=shop, threshold=ls_threshold)
                         messages.success(request, f'Low stock threshold set at "{ls_threshold}".')
 
-                if town:
-                    TownsShipped.objects.create(shop=shop, town=town, price=shipping_cost)
-                    messages.success(request, f'{town} registered.')
+                if county:
+                    CountyShipped.objects.create(shop=shop, county=county, price=shipping_cost)
+                    messages.success(request, f'{county} registered.')
 
                 messages.success(request, "Settings updated.")
 
@@ -635,7 +635,7 @@ def shop_profile_view(request):
         'units': units,
         'threshold': threshold,
         'p_methods': pm_methods or [],
-        'reg_towns': reg_towns,
+        'counties': counties,
     }
     return render(request, 'dash/shop_profile.html', context)
 

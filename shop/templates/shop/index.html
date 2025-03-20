@@ -8,71 +8,73 @@
 <!--====== App Content ======-->
 <div class="app-content">
 
+    {% if messages %}
+    {% for m in messages %}
+    <!--====== Messages Section ======-->
+    <div class="u-s-p-y-60">
+        <!--====== Section Content ======-->
+        <div class="section__content">
+            <div class="container">
+                <div class="breadcrumb">
+                    <div class="breadcrumb__wrap">
+                        <ul class="breadcrumb__list">
+                            <li class="is-marked">
+                                <a href="wishlist.html">{{ m }}</a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!--====== End Messages Section ======-->
+    {% endfor %}
+    {% endif %}
+
     <!--====== Primary Slider ======-->
     <div class="s-skeleton s-skeleton--h-600 s-skeleton--bg-grey u-s-m-b-46">
         <div class="owl-carousel primary-style-1" id="hero-slider">
             <div class="hero-slide"
-                style="background: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url('{{ shop.dp1.url }}');">
+                style="background: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url('{{ shop.avatar1.url }}'); background-size: cover; background-repeat: no-repeat;">
                 <div class="container">
                     <div class="row">
                         <div class="col-12">
                             <div class="slider-content slider-content--animation">
-
-                                <span class="content-span-1 u-c-white">Latest Update Stock</span>
-
+                                <span class="content-span-1 u-c-white">Shop With Ease</span>
                                 <span class="content-span-2 u-c-white">30% Off On Electronics</span>
-
                                 <span class="content-span-3 u-c-white">Find electronics on best prices, Also Discover most selling products of electronics</span>
-
-                                <span class="content-span-4 u-c-white">Starting At
-
-                                    <span class="u-c-brand">$1050.00</span></span>
-
-                                <a class="shop-now-link btn--e-brand" href="shop-side-version-2.html">SHOP NOW</a></div>
+                                <a class="shop-now-link btn--e-brand" href="shop-side-version-2.html">SHOP NOW</a>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
             <div class="hero-slide"
-                style="background: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url('{{ shop.dp2.url }}');">
+                style="background: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url('{{ shop.avatar2.url }}'); background-size: cover; background-repeat: no-repeat;">
                 <div class="container">
                     <div class="row">
                         <div class="col-12">
                             <div class="slider-content slider-content--animation">
-
                                 <span class="content-span-1 u-c-white">Find Top Brands</span>
-
                                 <span class="content-span-2 u-c-white">10% Off On Electronics</span>
-
                                 <span class="content-span-3 u-c-white">Find electronics on best prices, Also Discover most selling products of electronics</span>
-
-                                <span class="content-span-4 u-c-white">Starting At
-
-                                    <span class="u-c-brand">$380.00</span></span>
-
-                                <a class="shop-now-link btn--e-brand" href="shop-side-version-2.html">SHOP NOW</a></div>
+                                <a class="shop-now-link btn--e-brand" href="shop-side-version-2.html">SHOP NOW</a>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
             <div class="hero-slide"
-                style="background: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url('{{ shop.dp3.url }}');">
+                style="background: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url('{{ shop.avatar3.url }}'); background-size: cover; background-repeat: no-repeat;">
                 <div class="container">
                     <div class="row">
                         <div class="col-12">
                             <div class="slider-content slider-content--animation">
-
-                                <span class="content-span-1 u-c-white">Find Top Brands</span>
-
+                                <span class="content-span-1 u-c-white">Multiple Sales and Discounts</span>
                                 <span class="content-span-2 u-c-white">10% Off On Electronics</span>
-
                                 <span class="content-span-3 u-c-white">Find electronics on best prices, Also Discover most selling products of electronics</span>
-
-                                <span class="content-span-4 u-c-white">Starting At
-
-                                    <span class="u-c-brand">$550.00</span></span>
-
-                                <a class="shop-now-link btn--e-brand" href="shop-side-version-2.html">SHOP NOW</a></div>
+                                <a class="shop-now-link btn--e-brand" href="shop-side-version-2.html">SHOP NOW</a>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -135,12 +137,12 @@
                                                             </a>
                                                         </li>
                                                         <li>
-                                                            <a href="{% url 'add_to_cart' the_shop.name tc.product_id %}" data-tooltip="tooltip" data-placement="top" title="Add to Cart">
+                                                            <a href="{% url 'add_to_cart_view' the_shop.name tc.product_id %}" data-tooltip="tooltip" data-placement="top" title="Add to Cart">
                                                                 <i class="fas fa-plus-circle"></i>
                                                             </a>
                                                         </li>
                                                         <li>
-                                                            <a href="" data-tooltip="tooltip" data-placement="top" title="Add to Wishlist">
+                                                            <a href="{% url 'add_to_wishlist_view' the_shop.name tc.product_id %}" data-tooltip="tooltip" data-placement="top" title="Add to Wishlist">
                                                                 <i class="fas fa-heart"></i>
                                                             </a>
                                                         </li>
@@ -235,12 +237,12 @@
                                             </a>
                                         </li>
                                         <li>
-                                            <a href="{% url 'add_to_cart' the_shop.name d.product_id %}" data-tooltip="tooltip" data-placement="top" title="Add to Cart">
+                                            <a href="{% url 'add_to_cart_view' the_shop.name d.product_id %}" data-tooltip="tooltip" data-placement="top" title="Add to Cart">
                                                 <i class="fas fa-plus-circle"></i>
                                             </a>
                                         </li>
                                         <li>
-                                            <a href="" data-tooltip="tooltip" data-placement="top" title="Add to Wishlist">
+                                            <a href="{% url 'add_to_wishlist_view' the_shop.name d.product_id %}" data-tooltip="tooltip" data-placement="top" title="Add to Wishlist">
                                                 <i class="fas fa-heart"></i>
                                             </a>
                                         </li>
@@ -321,12 +323,12 @@
                                                 </a>
                                             </li>
                                             <li>
-                                                <a href="" data-tooltip="tooltip" data-placement="top" title="Add to Cart">
+                                                <a href="{% url 'add_to_cart_view' the_shop.name a.product_id %}" data-tooltip="tooltip" data-placement="top" title="Add to Cart">
                                                     <i class="fas fa-plus-circle"></i>
                                                 </a>
                                             </li>
                                             <li>
-                                                <a href="" data-tooltip="tooltip" data-placement="top" title="Add to Wishlist">
+                                                <a href="{% url 'add_to_wishlist_view' the_shop.name a.product_id %}" data-tooltip="tooltip" data-placement="top" title="Add to Wishlist">
                                                     <i class="fas fa-heart"></i>
                                                 </a>
                                             </li>
@@ -442,12 +444,12 @@
                                             </a>
                                         </li>
                                         <li>
-                                            <a data-tooltip="tooltip" data-placement="top" title="Add to Cart">
+                                            <a href="{% url 'add_to_cart_view' the_shop.name p.product_id %}" data-tooltip="tooltip" data-placement="top" title="Add to Cart">
                                                 <i class="fas fa-plus-circle"></i>
                                             </a>
                                         </li>
                                         <li>
-                                            <a href="" data-tooltip="tooltip" data-placement="top" title="Add to Wishlist">
+                                            <a href="{% url 'add_to_wishlist_view' the_shop.name p.product_id %}" data-tooltip="tooltip" data-placement="top" title="Add to Wishlist">
                                                 <i class="fas fa-heart"></i>
                                             </a>
                                         </li>

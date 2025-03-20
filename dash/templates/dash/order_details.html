@@ -46,6 +46,19 @@
                             </tbody>
                         </table>
                     </div>
+                    {% if order.source == 'cart' %}
+                    <br><br>
+                    <div>
+                        <h5 class="card-title">Ship to</h5>
+                        <p><strong>County:</strong> {{ order.county.county|title }}</p>
+                        <p><strong>Town:</strong> {{ order.address.town|title }}</p>
+                        <p><strong>Street:</strong> {{ order.address.street|title }}</p>
+                        <br>
+                        {% if order.driver %}
+                        <p><strong>Driver:</strong> {{ order.driver.user|title }}</p>
+                        {% endif %}
+                    </div>
+                    {% endif %}
                 </div>
             </div>
         </div>

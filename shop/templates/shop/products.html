@@ -226,14 +226,11 @@
                                                 <img class="aspect__img" src="{{ p.avatar1.url }}" alt="">
                                             </a>
                                             <div class="product-m__quick-look">
-                                                <a class="fas fa-search" data-modal="modal" data-modal-id="#quick-look" data-tooltip="tooltip" data-placement="top" title="Quick Look"></a>
+                                                <a class="fas fa-search" data-modal="modal" data-modal-id="#quick-look{{ p.id }}" data-tooltip="tooltip" data-placement="top" title="Quick Look"></a>
                                             </div>
-                                            <form class="product-m__add-cart" method="post">
-                                                {% csrf_token %}
-                                                <input type="hidden" name="id" value="{{ p.product_id }}">
-                                                <input type="hidden" name="source" value="add_to_cart">
-                                                <a href="#" class="btn--e-brand" onclick="event.preventDefault(); this.closest('form').submit();">Add to Cart</a>
-                                            </form>
+                                            <div class="product-m__add-cart">
+                                                <a href="{% url 'add_to_cart_view' the_shop.name p.product_id %}" class="btn--e-brand">Add to Cart</a>
+                                            </div>
                                         </div>
                                         <div class="product-m__content">
                                             <div class="product-m__category">
@@ -310,7 +307,8 @@
 
 
 <!--====== Quick Look Modal ======-->
-<div class="modal fade" id="quick-look">
+{% for r in products %}
+<div class="modal fade" id="quick-look{{ r.id }}">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content modal--shadow">
 
@@ -318,66 +316,45 @@
             <div class="modal-body">
                 <div class="row">
                     <div class="col-lg-5">
-
-                        <!--====== Product Breadcrumb ======-->
-                        <div class="pd-breadcrumb u-s-m-b-30">
-                            <ul class="pd-breadcrumb__list">
-                                <li class="has-separator">
-
-                                    <a href="index.hml">Home</a></li>
-                                <li class="has-separator">
-
-                                    <a href="shop-side-version-2.html">Electronics</a></li>
-                                <li class="has-separator">
-
-                                    <a href="shop-side-version-2.html">DSLR Cameras</a></li>
-                                <li class="is-marked">
-
-                                    <a href="shop-side-version-2.html">Nikon Cameras</a></li>
-                            </ul>
-                        </div>
-                        <!--====== End - Product Breadcrumb ======-->
-
-
                         <!--====== Product Detail ======-->
                         <div class="pd u-s-m-b-30">
                             <div class="pd-wrap">
                                 <div id="js-product-detail-modal">
                                     <div>
-
-                                        <img class="u-img-fluid" src="images/product/product-d-1.jpg" alt=""></div>
+                                        <img class="u-img-fluid" src="{{ r.avatar1.url }}" alt="">
+                                    </div>
                                     <div>
-
-                                        <img class="u-img-fluid" src="images/product/product-d-2.jpg" alt=""></div>
+                                        <img class="u-img-fluid" src="{{ r.avatar2.url }}" alt="">
+                                    </div>
                                     <div>
-
-                                        <img class="u-img-fluid" src="images/product/product-d-3.jpg" alt=""></div>
+                                        <img class="u-img-fluid" src="{{ r.avatar3.url }}" alt="">
+                                    </div>
                                     <div>
-
-                                        <img class="u-img-fluid" src="images/product/product-d-4.jpg" alt=""></div>
+                                        <img class="u-img-fluid" src="{{ r.avatar4.url }}" alt="">
+                                    </div>
                                     <div>
-
-                                        <img class="u-img-fluid" src="images/product/product-d-5.jpg" alt=""></div>
+                                        <img class="u-img-fluid" src="{{ r.avatar5.url }}" alt="">
+                                    </div>
                                 </div>
                             </div>
                             <div class="u-s-m-t-15">
                                 <div id="js-product-detail-modal-thumbnail">
                                     <div>
-
-                                        <img class="u-img-fluid" src="images/product/product-d-1.jpg" alt=""></div>
+                                        <img class="u-img-fluid" src="{{ r.avatar1.url }}" alt="">
+                                    </div>
                                     <div>
-
-                                        <img class="u-img-fluid" src="images/product/product-d-2.jpg" alt=""></div>
+                                        <img class="u-img-fluid" src="{{ r.avatar2.url }}" alt="">
+                                    </div>
                                     <div>
-
-                                        <img class="u-img-fluid" src="images/product/product-d-3.jpg" alt=""></div>
+                                        <img class="u-img-fluid" src="{{ r.avatar3.url }}" alt="">
+                                    </div>
                                     <div>
-
-                                        <img class="u-img-fluid" src="images/product/product-d-4.jpg" alt=""></div>
+                                        <img class="u-img-fluid" src="{{ r.avatar4.url }}" alt="">
+                                    </div>
                                     <div>
-
-                                        <img class="u-img-fluid" src="images/product/product-d-5.jpg" alt=""></div>
-                                </div>
+                                        <img class="u-img-fluid" src="{{ r.avatar5.url }}" alt="">
+                                    </div>
+                                </di1v>
                             </div>
                         </div>
                         <!--====== End - Product Detail ======-->
@@ -388,7 +365,7 @@
                         <div class="pd-detail">
                             <div>
 
-                                <span class="pd-detail__name">Nikon Camera 4k Lens Zoom Pro</span></div>
+                                <span class="pd-detail__name">{{ r.product }}</span></div>
                             <div>
                                 <div class="pd-detail__inline">
 
@@ -397,57 +374,60 @@
                                     <span class="pd-detail__discount">(76% OFF)</span><del class="pd-detail__del">$28.97</del></div>
                             </div>
                             <div class="u-s-m-b-15">
-                                <div class="pd-detail__rating gl-rating-style"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star-half-alt"></i>
-
+                                <div class="pd-detail__rating gl-rating-style">
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star-half-alt"></i>
                                     <span class="pd-detail__review u-s-m-l-4">
-
-                                        <a href="">23 Reviews</a></span></div>
+                                        <a href="">23 Reviews</a>
+                                    </span>
+                                </div>
                             </div>
                             <div class="u-s-m-b-15">
                                 <div class="pd-detail__inline">
-
                                     <span class="pd-detail__stock">200 in stock</span>
-
-                                    <span class="pd-detail__left">Only 2 left</span></div>
+                                    <span class="pd-detail__left">Only 2 left</span>
+                                </div>
                             </div>
                             <div class="u-s-m-b-15">
-
-                                <span class="pd-detail__preview-desc">Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book.</span></div>
-                            <div class="u-s-m-b-15">
-                                <div class="pd-detail__inline">
-
-                                    <span class="pd-detail__click-wrap"><i class="far fa-heart u-s-m-r-6"></i>
-
-                                        <a href="signin.html">Add to Wishlist</a>
-
-                                        <span class="pd-detail__click-count">(222)</span></span></div>
+                                <span class="pd-detail__preview-desc">{{ r.description }}</span>
                             </div>
                             <div class="u-s-m-b-15">
                                 <div class="pd-detail__inline">
-
+                                    <span class="pd-detail__click-wrap">
+                                        <i class="far fa-heart u-s-m-r-6"></i>
+                                        <a href="{% url 'add_to_wishlist_view' the_shop.name r.product_id %}">Add to Wishlist</a>
+                                        <span class="pd-detail__click-count">(222)</span>
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="u-s-m-b-15">
+                                <div class="pd-detail__inline">
                                     <span class="pd-detail__click-wrap"><i class="far fa-envelope u-s-m-r-6"></i>
-
                                         <a href="signin.html">Email me When the price drops</a>
-
-                                        <span class="pd-detail__click-count">(20)</span></span></div>
+                                        <span class="pd-detail__click-count">(20)</span>
+                                    </span>
+                                </div>
                             </div>
                             <div class="u-s-m-b-15">
                                 <ul class="pd-social-list">
                                     <li>
-
-                                        <a class="s-fb--color-hover" href="#"><i class="fab fa-facebook-f"></i></a></li>
+                                        <a class="s-fb--color-hover" href="#"><i class="fab fa-facebook-f"></i></a>
+                                    </li>
                                     <li>
-
-                                        <a class="s-tw--color-hover" href="#"><i class="fab fa-twitter"></i></a></li>
+                                        <a class="s-tw--color-hover" href="#"><i class="fab fa-twitter"></i></a>
+                                    </li>
                                     <li>
-
-                                        <a class="s-insta--color-hover" href="#"><i class="fab fa-instagram"></i></a></li>
+                                        <a class="s-insta--color-hover" href="#"><i class="fab fa-instagram"></i></a>
+                                    </li>
                                     <li>
-
-                                        <a class="s-wa--color-hover" href="#"><i class="fab fa-whatsapp"></i></a></li>
+                                        <a class="s-wa--color-hover" href="#"><i class="fab fa-whatsapp"></i></a>
+                                    </li>
                                     <li>
-
-                                        <a class="s-gplus--color-hover" href="#"><i class="fab fa-google-plus-g"></i></a></li>
+                                        <a class="s-gplus--color-hover" href="#"><i class="fab fa-google-plus-g"></i></a>
+                                    </li>
                                 </ul>
                             </div>
                             <div class="u-s-m-b-15">
@@ -496,53 +476,10 @@
         </div>
     </div>
 </div>
+{% endfor %}
 <!--====== End - Quick Look Modal ======-->
 
 
-<!--====== Add to Cart Modal ======-->
-<div class="modal fade" id="add-to-cart">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content modal-radius modal-shadow">
-
-            <button class="btn dismiss-button fas fa-times" type="button" data-dismiss="modal"></button>
-            <div class="modal-body">
-                <div class="row">
-                    <div class="col-lg-6 col-md-12">
-                        <div class="success u-s-m-b-30">
-                            <div class="success__text-wrap"><i class="fas fa-check"></i>
-
-                                <span>Item is added successfully!</span></div>
-                            <div class="success__img-wrap">
-
-                                <img class="u-img-fluid" src="images/product/electronic/product1.jpg" alt=""></div>
-                            <div class="success__info-wrap">
-
-                                <span class="success__name">Beats Bomb Wireless Headphone</span>
-
-                                <span class="success__quantity">Quantity: 1</span>
-
-                                <span class="success__price">$170.00</span></div>
-                        </div>
-                    </div>
-                    <div class="col-lg-6 col-md-12">
-                        <div class="s-option">
-
-                            <span class="s-option__text">1 item (s) in your cart</span>
-                            <div class="s-option__link-box">
-
-                                <a class="s-option__link btn--e-white-brand-shadow" data-dismiss="modal">CONTINUE SHOPPING</a>
-
-                                <a class="s-option__link btn--e-white-brand-shadow" href="cart.html">VIEW CART</a>
-
-                                <a class="s-option__link btn--e-brand-shadow" href="checkout.html">PROCEED TO CHECKOUT</a></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-<!--====== End - Add to Cart Modal ======-->
 <!--====== End - Modal Section ======-->
 
 

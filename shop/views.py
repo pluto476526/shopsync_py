@@ -6,7 +6,7 @@ from django.contrib import messages
 from django.db.models import Sum, Count, F
 from django.db import transaction
 from django.contrib.auth.decorators import login_required
-from shop.models import Shop, Cart, CartItem, ShopHelpDesk, TownsShipped, Address
+from shop.models import Shop, Cart, CartItem, ShopHelpDesk, CountyShipped, Address
 from dash.models import Inventory, Category, PaymentMethod, Delivery, DeliveryItem, TodaysDeal, Profile, Review, Coupon
 from datetime import datetime, timedelta, timezone
 import logging
@@ -17,17 +17,9 @@ import string
 # Logger setup
 logger = logging.getLogger(__name__)
 
-# Helper function: Generate a random order number
-def random_id():
-    return ''.join(secrets.choice(string.ascii_uppercase + string.digits) for _ in range(8))
-
 # Helper function: Retrieve a shop by name
 def get_shop(name):
     return get_object_or_404(Shop, name=name)
-
-# Helper function: Calculate cart total
-def calculate_cart_total(cart_items):
-    return cart_items.aggregate(total=Sum('total'))['total'] or -1
 
 
 # Helper: Add product to cart
@@ -57,7 +49,6 @@ def add_to_cart(request, name, product_no, quantity=1):
             cart = cart,
             product = product,
             quantity = quantity,
-            total = product.price * quantity,
         )
         messages.success(request, f"{product.product} added to your cart.")
         return
@@ -65,7 +56,8 @@ def add_to_cart(request, name, product_no, quantity=1):
 # View: Empty cart
 def clear_cart_view(request, name):
     the_shop = get_shop(name)
-    cart_items = Cart.objects.filter(is_deleted=False, status='pending', shop=the_shop, customer=request.user)
+    my_cart = Cart.objects.filter(shop=the_shop, customer=request.user, status='processing', is_deleted=False).first()
+    cart_items = CartItem.objects.filter(cart=my_cart)
 
     if request.method == 'POST':
         cart_items.update(is_deleted=True)
@@ -74,40 +66,55 @@ def clear_cart_view(request, name):
     return render(request, 'shop/clear_cart.html', {})
 
 
-# View: Add product to wishlist
+# HELPER: Add product to wishlist
 def add_to_wishlist(request, name, product_no):
     # Get the shop
     the_shop = get_shop(name)
     
-    # Get the product from the shop
-    product = get_object_or_404(Inventory, product_id=product_no, shop=the_shop)
+    # Get the product
+    product = get_object_or_404(Inventory, product_id=product_no)
     
-    # Ensure the user has a wishlist cart
-    wishlist, created = Cart.objects.get_or_create(
-        shop=the_shop,
-        customer=request.user,
-    )
-
-    # Check if the product is already in the wishlist
-    if CartItem.objects.filter(cart=wishlist, product=product, status='in_wishes').exists():
-        messages.info(request, f"{product.name} is already in your wishlist.")
-        return
-
-    # Check if the product is already in the user's active cart
-    active_cart = Cart.objects.filter(shop=the_shop, customer=request.user).first()
-    if active_cart and CartItem.objects.filter(cart=active_cart, product=product, status='pending').exists():
-        messages.info(request, f"{product.name} is already in your cart.")
-        return
-
-    # Add the product to the wishlist
-    CartItem.objects.create(
-        cart = wishlist,
-        product = product,
-        quantity = 1,
-        total = product.price,
+    # Ensure the user has an active cart
+    cart, created = Cart.objects.get_or_create(
+        shop = the_shop,
+        customer = request.user,
         status = 'in_wishes',
     )
-    messages.success(request, f"{product.name} added to your wishlist.")
+
+    # Check if the product is already in the wish list
+    wish_item = CartItem.objects.filter(cart=cart, product=product).first()
+    
+    if wish_item:
+        messages.info(request, f'{product.product} is already in your wish list.')
+        return
+    else:
+        # Otherwise, add a new CartItem
+        CartItem.objects.create(
+            cart = cart,
+            product = product,
+            quantity = 1,
+        )
+        messages.success(request, f"{product.product} added to your wish list.")
+        return
+
+
+# View: Add to cart from the index page
+def add_to_cart_view(request, name, product_id):
+    shop = get_shop(name)
+    add_to_cart(request, shop.name, product_id)
+    return redirect(request.META.get('HTTP_REFERER'))
+    context = {}
+    return render(request, 'empty.html', context)
+
+
+# View: Add to wishlist from the index page
+def add_to_wishlist_view(request, name, product_id):
+    shop = get_shop(name)
+    add_to_wishlist(request, shop.name, product_id)
+    return redirect(request.META.get('HTTP_REFERER'))
+    context = {}
+    return render(request, 'empty.html', context)
+
 
 # View: Shop homepage
 def index(request, name):
@@ -123,12 +130,12 @@ def index(request, name):
 
         # Fetch products from top categories(tc) excluding those in the user's pending cart
         my_cart = Cart.objects.filter(shop=shop, customer=request.user, status='processing').first()
-        cart_products = CartItem.objects.filter(cart=my_cart, is_deleted=False).values_list('id', flat=True)
+        cart_products = CartItem.objects.filter(cart=my_cart, is_deleted=False).values_list('product_id', flat=True)
+        
         tc_products = []
-
         for t in top_categories:
             cat = get_object_or_404(Category, category=t.category)
-            products = Inventory.objects.filter(shop=shop, category=cat).exclude(product_id__in=cart_products)[:3]
+            products = Inventory.objects.filter(shop=shop, category=cat, is_deleted=False).exclude(id__in=cart_products)[:3]
             for p in products:
                 tc_products.append(p)
 
@@ -136,26 +143,16 @@ def index(request, name):
         deals = TodaysDeal.objects.filter(shop=shop).order_by('time')[:2]
         active_deals = []
         for d in deals:
-            logger.debug(f'dl: {d}')
             if d.time > datetime.now(timezone(timedelta(hours=3))):
                 active_deals.append(d)
 
         # Fetch latest arrivals
-        products = Inventory.objects.filter(shop=shop)
+        products = Inventory.objects.filter(shop=shop).exclude(id__in=cart_products)
         arrivals = products.order_by('timestamp')[:4]
 
         # Fetch 4 featured products
         f_products = products.filter(is_featured=True).order_by('timestamp')[:4]
         
-        if request.method == 'POST':
-            prod_id = request.POST.get('id')
-            source = request.POST.get('source')
-            if source == 'add_to_wishlist':
-                add_to_wishlist(request, shop.name, prod_id)
-                return redirect('shop', shop.name)
-            if source == 'add_to_cart':
-                add_to_cart(request, shop.name, prod_id, 1)
-                return redirect('shop', shop.name)
         # Prepare context for rendering
         context = {
             'profile': profile,
@@ -166,6 +163,7 @@ def index(request, name):
             'deals': active_deals,
             'new_arrivals': arrivals,
             'shop': shop,
+            # 'referer': request.META.get('HTTP_REFERER')
         }
         return render(request, 'shop/index.html', context)
     
@@ -212,13 +210,7 @@ def products_view(request, name):
         }
         for c in categories
     ]
-    # for c in categories:
-    #     c_products = products.filter(category=c)
-    #     grouped_products.append({
-    #         'category': c,
-    #         'c_products': c_products,
-    #     })
-    
+   
     if min_price:
         products = products.filter(price__gte=min_price)
     if max_price:
@@ -320,18 +312,18 @@ def cart_view(request, name):
     the_shop = get_shop(name)
     my_cart = Cart.objects.filter(shop=the_shop, customer=request.user, status='processing').first()
     cart_items = CartItem.objects.filter(cart=my_cart)
-    reg_towns = TownsShipped.objects.filter(is_deleted=False, shop=the_shop)
+    counties = CountyShipped.objects.filter(is_deleted=False, shop=the_shop)
 
     if request.method == 'POST':
         cart_ids = request.POST.getlist('cart_pid[]')
         quantities = request.POST.getlist('quantity[]')
         note = request.POST.get('note')
         source = request.POST.get('source')
-        town_id = request.POST.get('town')
+        cnty_id = request.POST.get('county')
 
-        if source == 'add_town':
-            town = get_object_or_404(TownsShipped, pk=town_id)
-            my_cart.town = town
+        if source == 'add_county':
+            county = get_object_or_404(CountyShipped, pk=cnty_id)
+            my_cart.county = county
             my_cart.save()
             messages.success(request, 'Shipping costs calculated.')
             return redirect('cart', name=the_shop.name)
@@ -358,18 +350,18 @@ def cart_view(request, name):
             return redirect('cart', name=the_shop.name)
        
         elif source == 'checkout_btn':
-            if my_cart.town:
+            if my_cart.county:
                 my_cart.status = 'checkout'
                 my_cart.save()
                 messages.success(request, 'Please fill the details below to complete checkout.')
                 return redirect('checkout', name=the_shop.name)
             else:
-                messages.error(request, 'Please select nearest town and calculate shipping costs.')
+                messages.error(request, 'Please select your county and calculate shipping costs.')
                 return redirect('cart', name=the_shop.name)
 
     context = {
         'referer': referer,
-        'reg_towns': reg_towns,
+        'counties': counties,
         'my_cart': my_cart,
         'cart_items': [{'objects': cart, 'model_name': cart._meta.model_name} for cart in cart_items],
     }
@@ -424,13 +416,14 @@ def checkout_view(request, name):
                         return redirect('checkout', the_shop.name)
                 else:
                     return redirect('checkout', the_shop.name)
-            case 'order_btn':
+            case 'place_order':
                 with transaction.atomic():
-                    p_method = get_object_or_404(PaymentMethod, shop=the_shop, id=payment_method)
+                    p_method = get_object_or_404(PaymentMethod, id=payment_method)
+                    county = get_object_or_404(CountyShipped, id=my_cart.county.id)
                     # Create or get the delivery
                     delivery = Delivery.objects.create(username=request.user, shop=the_shop)
                     delivery.note = my_cart.note
-                    delivery.town = my_cart.town.town
+                    delivery.county = county
                     delivery.address = default_addr
                     delivery.payment_method = p_method
                     delivery.total = my_cart.total_price
@@ -453,6 +446,11 @@ def checkout_view(request, name):
 
                 messages.success(request, 'Check out completed.')
                 return redirect('shop', name=the_shop)
+            case 'cancel_order':
+                my_cart.is_deleted = True
+                my_cart.save()
+                messages.success(request, 'Order cancelld.')
+                return redirect('shop', name=the_shop)
 
     context = {
         'the_shop': the_shop,
@@ -469,7 +467,7 @@ def checkout_view(request, name):
 @login_required
 def history_view(request, name):
     the_shop = get_shop(name)
-    orders = Delivery.objects.filter(shop=the_shop, username=request.user).exclude(status='processing')
+    orders = Delivery.objects.filter(shop=the_shop, username=request.user, is_deleted=False)
     context = {'the_shop': the_shop, 'orders': orders}
     return render(request, 'shop/history.html', context)
 
@@ -478,10 +476,10 @@ def history_view(request, name):
 @login_required
 def order_details_view(request, name, order_id):
     the_shop = get_shop(name)
-    order = get_object_or_404(Delivery, id=order_id)
-    orders = DeliveryItem.objects.filter(delivery=order)
+    order = get_object_or_404(Delivery, order_number=order_id)
+    orders = DeliveryItem.objects.filter(delivery=order, is_deleted=False)
     address = Address.objects.filter(shop=the_shop, user=request.user, is_default=True).first()
-    shipping = get_object_or_404(TownsShipped, shop=the_shop, town=order.town)
+    shipping = get_object_or_404(CountyShipped, id=order.county.id)
     total_amnt = float(shipping.price) + float(order.total)
     context = {
         'the_shop': the_shop, 
@@ -498,18 +496,18 @@ def order_details_view(request, name, order_id):
 @login_required
 def wishlist_view(request, name):
     the_shop = get_shop(name)
-    wishes = Cart.objects.filter(is_deleted=False, shop=the_shop, customer=request.user, status='in_wishes')
-
+    my_carts = Cart.objects.filter(customer=request.user, shop=the_shop, is_deleted=False)
+    active_cart = my_carts.filter(status='processing').first()
+    cart_items = CartItem.objects.filter(cart=active_cart).values_list('id', flat=True)
+    logger.debug(f'cart items: {cart_items}')
+    wish_cart = my_carts.filter(status='in_wishes').first()
+    wishes = CartItem.objects.filter(cart=wish_cart).exclude(id__in=cart_items)
     if request.method == 'POST':
         wish_item = request.POST.get('id')
         source = request.POST.get('source')
-        quantity = 1
 
         if source == 'add_to_cart':
-            cart_item = get_object_or_404(Cart, product__product_id=wish_item)
-            cart_item.status = 'pending'
-            cart_item.save()
-            messages.success(request, 'Product added to cart.')
+            add_to_cart(request, the_shop, wish_item)
             return redirect('wishlist', name=the_shop.name)
 
     context = {
@@ -528,18 +526,6 @@ def categories_view(request, name):
         'categories': categories,
     }
     return render(request, 'shop/categories.html', context)
-
-
-# @login_required
-# def products_view2(request, name, category):
-#    the_shop = get_shop(name)
-#    category_instance = get_object_or_404(Category, shop=the_shop, category=category)
-#    products = Inventory.objects.filter(shop=the_shop, category=category_instance, status='available')
-#    context = {
-#        'products': products,
-#        'the_shop': the_shop,
-#    }
-#    return render(request, 'shop/products.html', context)
 
 
 @login_required
@@ -570,13 +556,17 @@ def helpdesk_view(request, name):
         'the_shop': the_shop,
         'issues': issues,
     }
-    return render(request, 'shop/helpdesk.html', context)
+    return render(request, 'shop/contact_us.html', context)
 
 
 @login_required
 def about_view(request, name):
     the_shop = get_shop(name)
-    context = {'the_shop': the_shop}
+    staff = Profile.objects.filter(shop=the_shop, in_staff=True, is_featured=True)
+    context = {
+        'the_shop': the_shop,
+        'staff': staff,
+    }
     return render(request, 'shop/about.html', context)
 
 
@@ -600,7 +590,7 @@ def delete_view(request, name, model_name, object_id):
         # Get the object instance
         obj = get_object_or_404(model, id=object_id)
 
-        # Check user permissions (Optional: Customize this logic)
+        # Check user permissions
         if not request.user.is_superuser and hasattr(obj, 'shop'):
             if obj.shop != request.user.profile.shop:
                 return HttpResponseForbidden("You do not have permission to delete this item.")
@@ -610,7 +600,7 @@ def delete_view(request, name, model_name, object_id):
             obj.is_deleted = True
             obj.save()
             messages.success(request, f"{obj} has been deleted.")
-            return redirect(request.POST.get('referer_url'))  # Adjust redirection as needed
+            return redirect(request.POST.get('referer_url'))
 
         # Render a confirmation page
         context = {
@@ -622,13 +612,14 @@ def delete_view(request, name, model_name, object_id):
 
     except ContentType.DoesNotExist:
         messages.error(request, "Invalid model type.")
-        return redirect(referer) # Adjust redirection as needed
+        return redirect(referer)
 
 
 @login_required
 def my_addresses_view(request, name):
     the_shop = get_shop(name)
     addresses = Address.objects.filter(is_deleted=False, shop=the_shop, user=request.user)
+    counties = CountyShipped.objects.filter(is_deleted=False, shop=the_shop)
 
     if request.method == 'POST':
         county = request.POST.get('county')
@@ -640,15 +631,16 @@ def my_addresses_view(request, name):
         set_default = request.POST.get('set_default')
 
         if source == 'new_address':
+            cnty = get_object_or_404(CountyShipped, id=county)
             Address.objects.create(
                 shop = the_shop,
                 user = request.user,
-                county = county,
+                county = cnty,
                 town = town,
                 street = street,
                 house = house,
             )
-            messages.success(request, 'New address created.')
+            messages.success(request, f'New address in {cnty.county}, {town} created.')
             return redirect('shop_addresses', the_shop.name)
 
         elif source == 'edit_address':
@@ -666,7 +658,64 @@ def my_addresses_view(request, name):
 
     context = {
         'addresses': addresses,
+        'counties': counties,
     }
     return render(request, 'shop/my_addresses.html', context)
+
+
+# View: return single items page
+def returns_view(request, name, order_id):
+    shop = get_shop(name)
+    delivery = get_object_or_404(Delivery, order_number=order_id)
+    delivery_items = DeliveryItem.objects.filter(delivery=delivery, status='none', is_deleted=False)
+
+    if request.method == 'POST':
+        item_ids = request.POST.getlist('item_id[]')
+        return_note = request.POST.get('return_note')
+        source = request.POST.get('source')
+        
+        match source:
+            case 'return_items':
+                with transaction.atomic():
+                    if return_note:
+                        delivery.return_note = return_note
+                        delivery.save()
+
+                    for i in item_ids:
+                        item = delivery_items.filter(id=i).first()
+                        item.status = 'returned'
+                        item.save()
+                        messages.success(request, f'{item.product.product} set for return.')
+                    return redirect('returns_page', shop.name, order_id)
+    context = {
+        'delivery_items': delivery_items,
+    }
+    return render(request, 'shop/returns_page.html', context)
+
+
+# View: Returns and cancellations
+def returns_and_cancellations_view(request, name):
+    shop = get_shop(name)
+    my_deliveries = Delivery.objects.filter(shop=shop, username=request.user)
+    returns = my_deliveries.filter(status='cancelled')
+    returned_items = DeliveryItem.objects.filter(delivery__in=my_deliveries, status='returned')
+    context = {
+        'returns': returns,
+        'returned_items': returned_items,
+    }
+    return render(request, 'shop/returns_and_cancellations.html', context)
+
+
+# View: Shop mini dashboard -> userstats
+def shop_dash_view(request, name):
+    shop = get_shop(name)
+    default_addr = Address.objects.filter(shop=shop, user=request.user, is_default=True).first()
+    recent_orders = Delivery.objects.filter(shop=shop, username=request.user, is_deleted=False)
+    context = {
+        'address': default_addr,
+        'recent_orders': recent_orders,
+    }
+    return render(request, 'shop/shop_dash.html', context)
+
 
 

@@ -27,10 +27,10 @@
                 class="nav-link"
                 id="profile-tab"
                 data-bs-toggle="tab"
-                href="#in_transit"
+                href="#shipped"
                 role="tab"
                 aria-selected="false"
-                >Deliveries in Transit</a
+                >Shipped Requests</a
               >
             </li>
             <li class="nav-item">
@@ -41,7 +41,7 @@
                 href="#completed"
                 role="tab"
                 aria-selected="false"
-                >Completed Delivery Requests</a
+                >Completed Requests</a
               >
             </li>
           </ul>
@@ -89,7 +89,8 @@
                         <tr>
                           <th>Order ID</th>
                           <th>Username</th>
-                          <th>Placed on</th>
+                          <th>Placed On</th>
+                          <th>Confirmed On</th>
                           <th>Total Amount</th>
                           <th></th>
                         </tr>
@@ -100,6 +101,7 @@
                           <td>{{ o.order_number }}</td>
                           <td>{{ o.username|title }}</td>
                           <td>{{ o.timestamp }}</td>
+                          <td>{{ o.time_confirmed }}</td>
                           <td>KSH. {{ o.total|intcomma }}</td>
                           <!-- <td class="text-success"> 98.05% <i class="ti-arrow-up"></i></td> -->
                           <td
@@ -205,9 +207,9 @@
           </div>
           <div
             class="tab-pane fade active"
-            id="in_transit"
+            id="shipped"
             role="tabpanel"
-            aria-labelledby="in_transit"
+            aria-labelledby="shipped"
           >
             <div class="col-sm-12 grid-margin stretch-card">
               <div class="card">
@@ -216,7 +218,7 @@
                     class="d-sm-flex justify-content-between align-items-start"
                   >
                     <div>
-                      <h4 class="card-title">Shipped Deliveries</h4>
+                      <h4 class="card-title">Shipped Requests</h4>
                       <p class="card-description">
                         View and manage delivery requests that have been
                         processed and are already in transit.
@@ -230,7 +232,8 @@
                         <tr>
                           <th>Order ID</th>
                           <th>Username</th>
-                          <th>Placed on</th>
+                          <th>Placed On</th>
+                          <th>Shipped On</th>
                           <th>Total Amount</th>
                           <th></th>
                         </tr>
@@ -241,6 +244,7 @@
                           <td>{{ o.order_number }}</td>
                           <td>{{ o.username|title }}</td>
                           <td>{{ o.timestamp }}</td>
+                          <td>{{ o.time_shipped }}</td>
                           <td>KSH. {{ o.total|title }}</td>
                           <!-- <td class="text-success"> 98.05% <i class="ti-arrow-up"></i></td> -->
                           <td
@@ -292,7 +296,7 @@
                     class="d-sm-flex justify-content-between align-items-start"
                   >
                     <div>
-                      <h4 class="card-title">Completed Deliveries Requests</h4>
+                      <h4 class="card-title">Completed Requests</h4>
                       <p class="card-description">
                         View all completed delivery requests.
                       </p>
@@ -305,7 +309,8 @@
                         <tr>
                           <th>Order ID</th>
                           <th>Username</th>
-                          <th>Placed on</th>
+                          <th>Placed On</th>
+                          <th>Completed On</th>
                           <th>Total Amount</th>
                           <th></th>
                         </tr>
@@ -316,6 +321,7 @@
                           <td>{{ o.order_number }}</td>
                           <td>{{ o.username|title }}</td>
                           <td>{{ o.timestamp }}</td>
+                          <td>{{ o.time_completed }}</td>
                           <td>KSH. {{ o.total|intcomma }}</td>
                           <!-- <td class="text-success"> 98.05% <i class="ti-arrow-up"></i></td> -->
                           <td>

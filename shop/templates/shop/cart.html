@@ -162,19 +162,19 @@
 
                                             <!--====== Select Box ======-->
 
-                                            <label class="gl-label" for="shipping-country">Select Town *</label>
-                                                <select class="select-box select-box--primary-style" id="shipping-country" name="town" required>
-                                                    {% for t in reg_towns %}
-                                                    <option value="{{ t.id }}" {% if my_cart.town == t %} selected {% endif %}>{{ t.town|title }} - KES. {{ t.price|intcomma }}</option>
+                                            <label class="gl-label" for="shipping-country">Select County *</label>
+                                                <select class="select-box select-box--primary-style" id="shipping-country" name="county" required>
+                                                    {% for c in counties %}
+                                                    <option value="{{ c.id }}" {% if my_cart.county == c %} selected {% endif %}>{{ c.county|title }} - KES. {{ c.price|intcomma }}</option>
                                                     {% endfor %}
                                                 </select>
                                             <!--====== End - Select Box ======-->
                                         </div>
-                                        <input type="hidden" name="source" value="add_town">
+                                        <input type="hidden" name="source" value="add_county">
                                         <div class="u-s-m-b-30">
                                             <button class="btn f-cart__ship-link btn--e-transparent-brand-b-2">CALCULATE SHIPPING</button>
                                         </div>
-                                        <span class="gl-text">Note: There are some towns where free shipping is available otherwise our flat rate charges or default delivery charges will be applied.</span>
+                                        <span class="gl-text">Note: There are some counties where free shipping is available otherwise our flat rate charges or default delivery charges will be applied.</span>
                                     </div>
                                 </form>
                                 <div class="col-lg-4 col-md-6 u-s-m-b-30">
@@ -206,7 +206,7 @@
                                                     </tr>
                                                     <tr>
                                                         <td>SHIPPING</td>
-                                                        <td>KES. {{ my_cart.town.price|intcomma }}</td>
+                                                        <td>KES. {{ my_cart.county.price|intcomma }}</td>
                                                     </tr>
                                                     {% if my_cart.discount %}
                                                     <tr>

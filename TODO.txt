@@ -2,4 +2,8 @@ check the cart page. the proceed to checkout part
 physical sales -->>
     make a list of all products with a searchbox at the top
     enable the user to edit quantities of selected products
-
+check the wishlist view -->>
+    products already in the cart are showing up un the wishlist
+make the returns and cancellation buttons in all nacessary pages
+how to remove the trailing s from the units
+fix cart page --> counties shipped

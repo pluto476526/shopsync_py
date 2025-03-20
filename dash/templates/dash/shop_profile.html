@@ -500,17 +500,17 @@
                         </div>
                       </div>
                     </div>
-                    {% if reg_towns %}
+                    {% if counties %}
                     <div class="row mb-3 bg-secondary">
-                      <label class="col-md-4 col-lg-3 col-form-label">Registered Towns</label>
+                      <label class="col-md-4 col-lg-3 col-form-label">Counties Shipped</label>
                       <div class="col-md-8 col-lg-9">
-                        {% for r in reg_towns %}
+                        {% for c in counties %}
                         <div class="form-check col-12 d-flex align-items-center justify-content-center">
                           <div class="col-4">
-                            <label>{{ r.town|title }}</label>
+                            <label>{{ c.county|title }}</label>
                           </div>
                           <div class="col-4">
-                            <label>KES. {{ r.price|intcomma }}</label>
+                            <label>KES. {{ c.price|intcomma }}</label>
                           </div>
                           <div class="col-4">
                             <button type="submit" title="Remove"
@@ -523,14 +523,14 @@
                     {% endif %}
                     <div class="row mb-3">
                       <label class="col-md-4 col-lg-3 col-form-label"
-                        >New Town, Shipping Cost</label
+                        >New County, Shipping Cost</label
                       >
                       <div class="col-md-8 col-lg-9">
                         <div class="form-check">
                           <input
                             class="form-control"
                             type="text"
-                            name="town"
+                            name="county"
                           />
                         </div>
                         <div class="form-check">

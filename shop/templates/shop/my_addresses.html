@@ -35,7 +35,7 @@
             <div class="dash">
                 <div class="container">
                     <div class="row">
-                       {% include 'shop/dash_sidebar.html' %}
+                       {% include 'shop/shop_sidebar.html' %}
                         <div class="col-lg-9 col-md-12">
                             <div class="dash__box dash__box--shadow dash__box--radius dash__box--bg-white u-s-m-b-30">
                                 <div class="dash__pad-2">
@@ -49,17 +49,19 @@
                                     <table class="dash__table-2">
                                         <thead>
                                             <tr>
-                                                <th>Action</th>
+                                                <th>County</th>
+                                                <th>Town</th>
                                                 <th>Street</th>
-                                                <th>House</th>
+                                                <th>Action</th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             {% for a in addresses %}
                                             <tr>
-                                                <td><a data-modal="modal" data-modal-id="#edit-ship-address{{ a.id }}" data-dismiss="modal" class="address-book-edit btn--e-transparent-platinum-b-2">View</a></td>
+                                                <td>{{ a.county.county|title }}</td>
+                                                <td>{{ a.town|title }}</td>
                                                 <td>{{ a.street }}</td>
-                                                <td>{{ a.house }}</td>
+                                                <td><a data-modal="modal" data-modal-id="#edit-ship-address{{ a.id }}" data-dismiss="modal" class="address-book-edit btn--e-transparent-platinum-b-2">View</a></td>
                                             </tr>
 
                                             {% endfor %}
@@ -70,7 +72,7 @@
                             <div>
                                 <a data-modal="modal" data-modal-id="#add-ship-address" data-dismiss="modal" class="dash__custom-link btn--e-brand-b-2">
                                     <i class="fas fa-plus u-s-m-r-8"></i>
-                                    <span>Add New Address</span>
+                                    <span>New Address</span>
                                 </a>
                             </div>
                         </div>
@@ -94,15 +96,22 @@
                     <form class="checkout-modal1__form" method="post">
                         {% csrf_token %}
                         <div class="u-s-m-b-30">
-                            <h1 class="gl-modal-h1">Add new Shipping Address</h1>
+                            <h1 class="gl-modal-h1">Create Shipping Address</h1>
                         </div>
                         <div class="gl-inline">
                             <div class="u-s-m-b-30">
+                                <!--====== Select Box ======-->
                                 <label class="gl-label">County *</label>
-                                <input class="input-text input-text--primary-style" type="text" name="county" placeholder="County" required>
+                                    <select class="select-box select-box--primary-style" name="county" required>
+                                        <option>---------------------------------------</option>
+                                        {% for c in counties %}
+                                        <option value="{{ c.id }}">{{ c.county|title }}</option>
+                                        {% endfor %}
+                                    </select>
+                                <!--====== End - Select Box ======-->
                             </div>
                             <div class="u-s-m-b-30">
-                                <label class="gl-label">Nearest Town *</label>
+                                <label class="gl-label">Town *</label>
                                 <input class="input-text input-text--primary-style" type="text" name="town" placeholder="Nearest Town" required>
                             </div>
                         </div>
@@ -144,7 +153,7 @@
                         <div class="gl-inline">
                             <div class="u-s-m-b-30">
                                 <label class="gl-label">County *</label>
-                                <input class="input-text input-text--primary-style" type="text" name="county" value="{{ a.county }}" required>
+                                <input class="input-text input-text--primary-style" type="text" name="county" value="{{ a.county.county|title }}" required>
                             </div>
                             <div class="u-s-m-b-30">
                                 <label class="gl-label">Nearest Town *</label>

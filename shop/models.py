@@ -20,7 +20,7 @@ class Shop(models.Model):
     logo = models.ImageField(default='logo.jpg')
     avatar1 = models.ImageField(default='shop1.jpg')
     avatar2 = models.ImageField(default='shop2.jpg')
-    avatar3 = models.ImageField(default='shop13.jpg')
+    avatar3 = models.ImageField(default='shop3.jpg')
     title1 = models.CharField(max_length=50, default='Find Top Brands.')
     title2 = models.CharField(max_length=50, default='Exceptional Quality.')
     title3 = models.CharField(max_length=50, default='Shop With Ease')
@@ -47,31 +47,11 @@ class Shop(models.Model):
         super().save(*args, **kwargs)
 
 
-# class Cart(models.Model):
-#     shop = models.ForeignKey('shop.Shop', on_delete=models.CASCADE)
-#    customer = models.ForeignKey('auth.User', on_delete=models.CASCADE)
-#    cart_id = models.CharField(max_length=10)
-#    category = models.CharField(max_length=50)
-#    product = models.ForeignKey('dash.Inventory', on_delete=models.CASCADE)
-#    quantity = models.PositiveIntegerField()
-#    total = models.DecimalField(max_digits=10, decimal_places=2, default=0)
-#    town = models.ForeignKey('shop.TownsShipped', on_delete=models.SET_NULL, null=True)
-#    note = models.CharField(max_length=200, null=True, blank=True)
-#    status = models.CharField(max_length=20, default='pending')
-#    timestamp = models.DateTimeField(auto_now_add=True)
-#    checked_out = models.DateTimeField(blank=True, null=True)
-#    is_deleted = models.BooleanField(default=False)
-#    discount = models.ForeignKey('dash.Coupon', on_delete=models.SET_NULL, blank=True, null=True)
-#
-#    def __str__(self):
-#        return f"{self.customer}'s cart: {self.cart_id}"
-
-
 class Cart(models.Model):
     shop = models.ForeignKey('shop.Shop', on_delete=models.CASCADE)
     customer = models.ForeignKey('auth.User', on_delete=models.CASCADE)
-    status = models.CharField(max_length=20, default='processing')
-    town = models.ForeignKey('shop.TownsShipped', on_delete=models.SET_NULL, null=True)
+    status = models.CharField(max_length=20, default='processing') # processing, checkout, checked_out, in_wishes
+    county = models.ForeignKey('shop.CountyShipped', on_delete=models.SET_NULL, null=True, blank=True)
     note = models.CharField(max_length=200, null=True, blank=True)
     timestamp = models.DateTimeField(auto_now_add=True)
     checked_out = models.DateTimeField(blank=True, null=True)
@@ -93,8 +73,8 @@ class Cart(models.Model):
         total = self.original_price
         if self.coupon:
             total = float(total) * (1 - self.coupon.percent_off / 100)
-        if self.town:
-            total = float(total) + self.town.price
+        if self.county:
+            total = float(total) + self.county.price
         if self.discount:
             total = float(total) - self.discount
         return max(total, 0)
@@ -117,8 +97,8 @@ class CartItem(models.Model):
 
 
 class ShopHelpDesk(models.Model):
-    shop = models.ForeignKey('shop.Shop', on_delete=models.SET_NULL, null=True, related_name='shop')
-    username = models.ForeignKey('auth.User', on_delete=models.SET_NULL, null=True, related_name='shopper')
+    shop = models.ForeignKey('shop.Shop', on_delete=models.CASCADE, related_name='shop')
+    username = models.ForeignKey('auth.User', on_delete=models.CASCADE,  related_name='shopper')
     phone = models.CharField(max_length=15, blank=True, null=True)
     email = models.EmailField(blank=True, null=True)
     issue = models.CharField(max_length=100)
@@ -139,20 +119,20 @@ class ShopHelpDesk(models.Model):
         super().save(*args, **kwargs)
 
 
-class TownsShipped(models.Model):
+class CountyShipped(models.Model):
     shop = models.ForeignKey('shop.Shop', on_delete=models.CASCADE)
-    town = models.CharField(max_length=50)
+    county = models.CharField(max_length=50)
     price = models.PositiveIntegerField(default=0)
     is_deleted = models.BooleanField(default=False)
 
     def __str__(self):
-        return f'{self.shop}: {self.town}'
+        return f'{self.shop}: {self.county}'
 
 
 class Address(models.Model):
     shop = models.ForeignKey('shop.Shop', on_delete=models.CASCADE, related_name='addresses')
-    user = models.ForeignKey('auth.User', on_delete=models.CASCADE)
-    county = models.CharField(max_length=20)
+    user = models.ForeignKey('auth.User', on_delete=models.CASCADE, related_name='user_addr')
+    county = models.ForeignKey('shop.CountyShipped', on_delete=models.CASCADE, related_name='counties')
     town = models.CharField(max_length=20)
     street = models.CharField(max_length=20)
     house = models.CharField(max_length=20)

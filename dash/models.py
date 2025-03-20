@@ -22,6 +22,7 @@ class Profile(models.Model):
     timestamp = models.DateTimeField(auto_now_add=True)
     phone = models.CharField(max_length=20, blank=True, null=True)
     is_deleted = models.BooleanField(default=False)
+    is_featured = models.BooleanField(default=False)
 
     def __str__(self):
         return f"{self.user.username}'s profile"
@@ -46,7 +47,7 @@ class Category(models.Model):
     category = models.CharField(max_length=50)
     description = models.TextField(blank=True, null=True)
     is_featured = models.BooleanField(default=False)
-    avatar = models.ImageField(default='dp1.jpg')
+    avatar = models.ImageField(default='category.jpg')
     in_sale = models.BooleanField(default=False)
     percent_off = models.PositiveIntegerField(default=0)
     timestamp = models.DateTimeField(auto_now_add=True)
@@ -141,7 +142,7 @@ class PaymentMethod(models.Model):
 
 class Delivery(models.Model):
     shop = models.ForeignKey('shop.Shop', on_delete=models.CASCADE)
-    username = models.ForeignKey('auth.User', on_delete=models.SET_NULL, blank=True, null=True, related_name='customer')
+    username = models.ForeignKey('auth.User', on_delete=models.CASCADE, related_name='customer')
     unregistered_user = models.CharField(max_length=50, blank=True, null=True)
     order_number = models.CharField(max_length=10, blank=True, null=True)
     avatar = models.ImageField(default='shop1.jpg')
@@ -149,17 +150,19 @@ class Delivery(models.Model):
     time_confirmed = models.DateTimeField(blank=True, null=True)
     time_shipped = models.DateTimeField(blank=True, null=True)
     time_completed = models.DateTimeField(blank=True, null=True)
+    time_cancelled = models.DateTimeField(blank=True, null=True)
     phone = models.CharField(max_length=15, blank=True, null=True)
     email = models.EmailField(unique=False, blank=True, null=True)
-    town = models.CharField(max_length=20, null=True, blank=True)
+    county = models.ForeignKey('shop.CountyShipped', on_delete=models.SET_NULL, null=True, blank=True)
     address = models.ForeignKey('shop.Address', on_delete=models.SET_NULL, blank=True, null=True)
     payment_method = models.ForeignKey('dash.PaymentMethod', on_delete=models.SET_NULL, blank=True, null=True)
     admin = models.ForeignKey('auth.User', on_delete=models.SET_NULL, blank=True, null=True, related_name='admin')
     driver = models.ForeignKey('dash.Profile', on_delete=models.SET_NULL, blank=True, null=True, related_name='staff')
     note = models.TextField(blank=True, null=True)
+    return_note = models.TextField(blank=True, null=True)
     source = models.CharField(max_length=10, default='dash') # dash, cart
     is_deleted = models.BooleanField(default=False)
-    status = models.CharField(max_length=20, default='processing') # processing, confirmed, shipped, completed
+    status = models.CharField(max_length=20, default='processing') # processing, confirmed, shipped, completed, cancelled
     total = models.DecimalField(max_digits=10, decimal_places=2, default=0)
 
     def __str__(self):
@@ -175,6 +178,8 @@ class DeliveryItem(models.Model):
     product = models.ForeignKey('dash.Inventory', on_delete=models.SET_NULL, null=True)
     quantity = models.PositiveIntegerField()
     total = models.DecimalField(max_digits=10, decimal_places=2)
+    is_deleted = models.BooleanField(default=False)
+    status = models.CharField(max_length=20, default='none') # none, cancelled, returned
 
     def save(self, *args, **kwargs):
         """Automatically calculate the total price of the item"""
@@ -206,8 +211,8 @@ class Coupon(models.Model):
 
 class TodaysDeal(models.Model):
     shop = models.ForeignKey('shop.Shop', on_delete=models.CASCADE)
-    product_id = models.CharField(max_length=10)
-    product = models.CharField(max_length=50, null=True)
+    # product_id = models.CharField(max_length=10)
+    product = models.ForeignKey('dash.Inventory', on_delete=models.CASCADE, null=True, related_name='deal')
     avatar = models.ImageField(default='dp1.jpg')
     category = models.CharField(max_length=20, null=True)
     price = models.PositiveIntegerField(default=0)

@@ -5,6 +5,7 @@ from dash.models import (
     Inventory,
     Supplier,
     Delivery,
+    DeliveryItem,
     PaymentMethod,
     TodaysDeal,
     Units,
@@ -17,6 +18,7 @@ admin.site.register(Category)
 admin.site.register(Inventory)
 admin.site.register(Supplier)
 admin.site.register(Delivery)
+admin.site.register(DeliveryItem)
 admin.site.register(PaymentMethod)
 admin.site.register(TodaysDeal)
 admin.site.register(Units)
